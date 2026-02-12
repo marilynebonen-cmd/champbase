@@ -18,7 +18,7 @@ export function Card({
   return (
     <div
       className={[
-        "rounded-xl border border-[var(--card-border)] bg-[var(--card)] p-6 transition-base",
+        "rounded-xl border border-[var(--card-border)] bg-[var(--card)] p-4 sm:p-6 transition-base",
         "shadow-sm",
         hover &&
           "hover:border-[var(--card-border-hover)] hover:bg-[var(--card-hover)] hover:shadow-md hover:-translate-y-0.5 cursor-pointer",

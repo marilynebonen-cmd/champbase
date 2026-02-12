@@ -92,9 +92,9 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-40 border-b border-[var(--card-border)] bg-[var(--card)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--card)]/80">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+    <div className="min-h-screen flex flex-col overflow-x-hidden">
+      <header className="sticky top-0 z-40 border-b border-[var(--card-border)] bg-[var(--card)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--card)]/80 w-full">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
           <Logo variant="nav" />
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1">{navContent}</nav>
@@ -129,12 +129,12 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         </div>
         {mobileOpen && (
-          <div className="md:hidden border-t border-[var(--card-border)] bg-[var(--card)] px-4 py-4 animate-fade-in">
+          <div className="md:hidden border-t border-[var(--card-border)] bg-[var(--card)] px-3 sm:px-4 py-3 sm:py-4 animate-fade-in">
             <nav className="flex flex-col gap-1">{navContent}</nav>
           </div>
         )}
       </header>
-      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">{children}</main>
+      <main className="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-8 md:py-10">{children}</main>
       <InstallPWAPrompt />
     </div>
   );

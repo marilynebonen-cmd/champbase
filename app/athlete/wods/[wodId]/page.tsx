@@ -486,43 +486,45 @@ function WodDetailContent() {
           )}
           {!loadingLb && leaderboard.length > 0 && (
             <>
-              <div className="rounded-xl border border-[var(--card-border)] overflow-hidden overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-                <table className="w-full min-w-[500px] text-sm">
-                  <thead>
-                    <tr className="border-b border-[var(--card-border)] bg-[var(--background)]/50">
-                      <th className="text-left py-3 px-3 font-semibold text-[var(--muted)]">#</th>
-                      <th className="text-left py-3 px-3 font-semibold text-[var(--muted)]">Athlète</th>
-                      <th className="text-left py-3 px-3 font-semibold text-[var(--muted)]">Division</th>
-                      <th className="text-right py-3 px-3 font-semibold text-[var(--muted)]">Score</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {leaderboard.map((row, i) => (
-                      <tr key={row.id} className="border-b border-[var(--card-border)]/50 last:border-0 hover:bg-[var(--card)]/50 transition-colors">
-                        <td className="py-2.5 px-3 font-medium">{i + 1}</td>
-                        <td className="py-2.5 px-3">
-                          <AthleteName athleteId={row.uid} athletesMap={athletesMap} />
-                        </td>
-                        <td className="py-2.5 px-3 text-[var(--muted)] text-xs">
-                          {divisionLabel(row.division)}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-semibold">
-                          {formatWodValue(
-                            (wod.scoreType === "reps" || wod.scoreType === "time") && row.completedWithinTimeCap === true ? "time" : wod.scoreType,
-                            row.value,
-                            row.valueRaw
-                          )}
-                          {wod.scoreType === "weight" && <span className="text-sm text-[var(--muted)]"> lbs</span>}
-                        </td>
+              <div className="rounded-xl border border-[var(--card-border)] overflow-hidden -mx-3 sm:-mx-4 md:mx-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-full text-xs sm:text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--card-border)] bg-[var(--background)]/50">
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-3 font-semibold text-[var(--muted)]">#</th>
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-3 font-semibold text-[var(--muted)]">Athlète</th>
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-3 font-semibold text-[var(--muted)]">Division</th>
+                        <th className="text-right py-2 sm:py-3 px-2 sm:px-3 font-semibold text-[var(--muted)]">Score</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {leaderboard.map((row, i) => (
+                        <tr key={row.id} className="border-b border-[var(--card-border)]/50 last:border-0 hover:bg-[var(--card)]/50 transition-colors">
+                          <td className="py-2 sm:py-2.5 px-2 sm:px-3 font-medium">{i + 1}</td>
+                          <td className="py-2 sm:py-2.5 px-2 sm:px-3">
+                            <AthleteName athleteId={row.uid} athletesMap={athletesMap} />
+                          </td>
+                          <td className="py-2 sm:py-2.5 px-2 sm:px-3 text-[var(--muted)] text-xs">
+                            {divisionLabel(row.division)}
+                          </td>
+                          <td className="py-2 sm:py-2.5 px-2 sm:px-3 text-right font-semibold">
+                            {formatWodValue(
+                              (wod.scoreType === "reps" || wod.scoreType === "time") && row.completedWithinTimeCap === true ? "time" : wod.scoreType,
+                              row.value,
+                              row.valueRaw
+                            )}
+                            {wod.scoreType === "weight" && <span className="text-xs sm:text-sm text-[var(--muted)]"> lbs</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setLimit((l) => l + PAGE_SIZE)}
-                className="mt-3 text-sm font-medium text-[var(--accent)] hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 focus:ring-offset-[var(--card)] rounded"
+                className="mt-3 text-xs sm:text-sm font-medium text-[var(--accent)] hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 focus:ring-offset-[var(--card)] rounded"
               >
                 Charger plus
               </button>
