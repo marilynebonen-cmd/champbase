@@ -49,7 +49,7 @@ export default function GymProfilePage() {
   const [loading, setLoading] = useState(true);
   const tabFromUrl = searchParams.get("tab") as TabId | null;
   const [activeTab, setActiveTab] = useState<TabId>(
-    tabFromUrl && ["info", "members", "leaderboard", "feed"].includes(tabFromUrl) ? tabFromUrl : "info"
+    tabFromUrl && ["info", "members", "leaderboard", "feed"].includes(tabFromUrl) ? tabFromUrl : "feed"
   );
 
   // Feed state: gyms/{gymId}/feed (created/updated when athlete submits gym daily WOD score)
@@ -154,10 +154,10 @@ export default function GymProfilePage() {
   const isOwner = Boolean(user?.uid && gym.ownerUid === user.uid);
   const bannerImageUrl = gym.imageUrl && gym.imageUrl.trim() !== "" ? gym.imageUrl.trim() : null;
   const tabs: { id: TabId; label: string }[] = [
-    { id: "info", label: "Infos" },
-    { id: "members", label: "Membres" },
-    { id: "leaderboard", label: "WODs & Classement" },
     { id: "feed", label: "Fil d'activité" },
+    { id: "leaderboard", label: "WODs & Classement" },
+    { id: "members", label: "Membres" },
+    { id: "info", label: "Infos" },
   ];
 
   function handleBannerFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -264,7 +264,7 @@ export default function GymProfilePage() {
       </Link>
 
       {/* Bannière : image lue depuis Firestore (gyms/{gymId}.imageUrl), affichée derrière le nom */}
-      <header className="relative w-full rounded-2xl overflow-hidden mb-10 aspect-[3/1] min-h-[200px] flex flex-col justify-end bg-[var(--card)]">
+      <header className="relative w-full rounded-xl md:rounded-2xl overflow-hidden mb-6 md:mb-10 h-[180px] sm:h-[220px] md:h-[280px] flex flex-col justify-end bg-[var(--card)]">
         <input
           ref={bannerInputRef}
           type="file"
@@ -308,7 +308,7 @@ export default function GymProfilePage() {
             onClick={() => bannerInputRef.current?.click()}
             disabled={bannerUploading}
             className={
-              "absolute top-4 right-4 z-20 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-black shadow-xl ring-2 ring-black/20 transition-all " +
+              "absolute top-3 right-3 md:top-4 md:right-4 z-20 inline-flex items-center gap-2 rounded-full px-3 py-2 md:px-4 md:py-2.5 text-xs md:text-sm font-semibold text-black shadow-xl ring-2 ring-black/20 transition-all " +
               (bannerUploading
                 ? "bg-[var(--accent)]/80 opacity-80 cursor-wait"
                 : "bg-[var(--accent)] hover:opacity-95 hover:scale-[1.03] cursor-pointer")
@@ -322,16 +322,17 @@ export default function GymProfilePage() {
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                Changer la bannière
+                <span className="hidden sm:inline">Changer la bannière</span>
+                <span className="sm:hidden">Bannière</span>
               </>
             )}
           </button>
         )}
-        <div className="relative p-6 md:p-10 pb-8">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
+        <div className="relative p-4 sm:p-6 md:p-10 pb-4 sm:pb-6 md:pb-8">
+          <div className="flex flex-wrap items-end justify-between gap-3 md:gap-4">
+            <div className="max-w-full">
               <h1
-                className={`text-3xl md:text-5xl font-bold tracking-tight mb-2 ${
+                className={`text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight mb-2 ${
                   bannerImageUrl ? "text-white drop-shadow-lg" : "text-[var(--foreground)]"
                 }`}
               >
@@ -339,7 +340,7 @@ export default function GymProfilePage() {
               </h1>
               {location && (
                 <p
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm ${
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm ${
                     bannerImageUrl
                       ? "bg-white/15 backdrop-blur-sm border border-white/25 text-white/95"
                       : "bg-[var(--card)] border border-[var(--card-border)] text-[var(--muted)]"
@@ -356,7 +357,7 @@ export default function GymProfilePage() {
 
       {/* Onglets – style minimal */}
       <nav
-        className="flex flex-wrap gap-2 mb-10"
+        className="flex flex-wrap gap-2 mb-6 md:mb-10"
         aria-label="Onglets"
       >
         {tabs.map((tab) => (
@@ -366,8 +367,8 @@ export default function GymProfilePage() {
             onClick={() => setActiveTab(tab.id)}
             className={
               activeTab === tab.id
-                ? "rounded-full px-5 py-2.5 text-sm font-semibold bg-[var(--accent)] text-black"
-                : "rounded-full px-5 py-2.5 text-sm font-medium text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--card)] transition-colors"
+                ? "rounded-full px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-semibold bg-[var(--accent)] text-black"
+                : "rounded-full px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-medium text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--card)] transition-colors"
             }
           >
             {tab.label}
