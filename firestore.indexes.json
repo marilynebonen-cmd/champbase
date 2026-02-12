@@ -151,13 +151,6 @@
         { "fieldPath": "isPublic", "order": "ASCENDING" },
         { "fieldPath": "performedAt", "order": "DESCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "benchmark_results",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "updatedAt", "order": "DESCENDING" }
-      ]
     }
   ],
   "fieldOverrides": []

@@ -30,6 +30,7 @@ import { getWodDisplayDescription } from "@/lib/wodScoreUtils";
 import type { GymWithId } from "@/types";
 import type { WodWithId } from "@/types";
 import type { UserProfile } from "@/types";
+import { getDivisionLabel } from "@/types";
 import type { GymFeedDocWithId } from "@/types";
 import type { DocumentSnapshot } from "firebase/firestore";
 
@@ -622,7 +623,7 @@ export default function GymProfilePage() {
                             "—"}
                         </p>
                         {member.preferredDivision && (
-                          <p className="text-[var(--muted)] text-sm mt-0.5">{member.preferredDivision}</p>
+                          <p className="text-[var(--muted)] text-sm mt-0.5">{getDivisionLabel(member.preferredDivision)}</p>
                         )}
                       </div>
                     </Card>

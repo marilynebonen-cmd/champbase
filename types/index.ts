@@ -9,6 +9,19 @@ export type TimestampLike = { seconds: number; nanoseconds: number } | Date;
 export const DIVISIONS = ["M_RX", "M_SCALED", "F_RX", "F_SCALED"] as const;
 export type Division = (typeof DIVISIONS)[number];
 
+/** Libellés d'affichage pour la division (profil, cartes membre, etc.). */
+export const DIVISION_LABELS: Record<Division, string> = {
+  M_RX: "Homme RX",
+  M_SCALED: "Homme Scale",
+  F_RX: "Femme RX",
+  F_SCALED: "Femme Scale",
+};
+
+export function getDivisionLabel(division: Division | undefined | null): string {
+  if (!division) return "—";
+  return DIVISION_LABELS[division] ?? division;
+}
+
 // ─── Score types (for workouts and scores) ──────────────────────────────────
 export const SCORE_TYPES = ["REPS", "TIME", "WEIGHT"] as const;
 export type ScoreType = (typeof SCORE_TYPES)[number];

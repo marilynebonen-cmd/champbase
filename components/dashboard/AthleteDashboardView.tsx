@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
@@ -13,14 +13,18 @@ import {
   getEvent,
   listBenchmarks,
   listBenchmarkResultsForUser,
+  getUserWeightBenchmarks,
+  updateBenchmarkVisibility,
 } from "@/lib/db";
 import { getBestResult, formatResultValue } from "@/lib/benchmarkResultUtils";
 import type { UserProfile } from "@/types";
+import { getDivisionLabel } from "@/types";
 import type { EventWithId } from "@/types";
 import type { EventRegistrationWithId } from "@/types";
 import { useToast } from "@/contexts/ToastContext";
 import { BenchmarkCard } from "./BenchmarkCard";
 import { SkillCard } from "./SkillCard";
+import { PercentCalculatorDialog } from "@/components/PercentCalculatorDialog";
 
 /** Preview des benchmarks affichés sur le dashboard (label + nameLower pour matcher Firestore). */
 const BENCHMARK_PREVIEW_NAMES = [
@@ -67,6 +71,9 @@ export function AthleteDashboardView() {
     }))
   );
   const [isMobile, setIsMobile] = useState(false);
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
+  const [weightBenchmarksForCalc, setWeightBenchmarksForCalc] = useState<Awaited<ReturnType<typeof getUserWeightBenchmarks>>>([]);
+  const [weightBenchmarksLoading, setWeightBenchmarksLoading] = useState(false);
   const { addToast } = useToast();
 
   useEffect(() => {
@@ -94,7 +101,7 @@ export function AthleteDashboardView() {
           BENCHMARK_PREVIEW_NAMES.map(async ({ label, nameLower }) => {
             const bench = benchList.find((b) => b.nameLower === nameLower) ?? null;
             if (!bench) {
-              return { label, benchmarkId: null, formattedValue: "—" };
+              return { label, benchmarkId: null, formattedValue: "—", resultId: null, isPublic: true };
             }
             const results = await listBenchmarkResultsForUser(user.uid, bench.id);
             const pr = getBestResult(results, bench.scoreType);
@@ -105,6 +112,8 @@ export function AthleteDashboardView() {
               label,
               benchmarkId: bench.id,
               formattedValue,
+              resultId: pr?.id ?? null,
+              isPublic: pr?.isPublic !== false,
             };
           })
         );
@@ -139,6 +148,15 @@ export function AthleteDashboardView() {
       setClubName(g ? g.name : null)
     );
   }, [profile?.affiliatedGymId]);
+
+  useEffect(() => {
+    if (!calculatorOpen || !user?.uid) return;
+    setWeightBenchmarksLoading(true);
+    getUserWeightBenchmarks(user.uid)
+      .then(setWeightBenchmarksForCalc)
+      .catch(() => setWeightBenchmarksForCalc([]))
+      .finally(() => setWeightBenchmarksLoading(false));
+  }, [calculatorOpen, user?.uid]);
 
   useEffect(() => {
     if (!user) return;
@@ -189,7 +207,7 @@ export function AthleteDashboardView() {
             <dl className="mt-4 w-full space-y-2 text-left">
               <div className="flex justify-between gap-2">
                 <dt className="text-sm text-[var(--muted)]">Division</dt>
-                <dd className="text-sm font-medium">{profile?.preferredDivision ?? "—"}</dd>
+                <dd className="text-sm font-medium">{getDivisionLabel(profile?.preferredDivision)}</dd>
               </div>
               <div className="flex justify-between gap-2">
                 <dt className="text-sm text-[var(--muted)]">Club affilié</dt>
@@ -201,10 +219,6 @@ export function AthleteDashboardView() {
               </div>
               <div className="flex justify-between gap-2">
                 <dt className="text-sm text-[var(--muted)]">Région</dt>
-                <dd className="text-sm font-medium">—</dd>
-              </div>
-              <div className="flex justify-between gap-2">
-                <dt className="text-sm text-[var(--muted)]">Citoyenneté</dt>
                 <dd className="text-sm font-medium">—</dd>
               </div>
             </dl>
@@ -225,9 +239,18 @@ export function AthleteDashboardView() {
           <section>
             <h2 className="text-xl font-bold mb-3">Leaderboard de mon gym</h2>
             <Card className="flex flex-wrap items-center justify-between gap-4">
-              <p className="font-medium text-[var(--foreground)]">
-                {clubName ?? (profile?.affiliatedGymId ? "Mon club" : "Aucun club affilié")}
-              </p>
+              {profile?.affiliatedGymId ? (
+                <Link
+                  href={`/gyms/${profile.affiliatedGymId}`}
+                  className="font-medium text-[var(--foreground)] hover:text-[var(--accent)] transition-colors"
+                >
+                  {clubName ?? "Mon club"}
+                </Link>
+              ) : (
+                <p className="font-medium text-[var(--foreground)]">
+                  Aucun club affilié
+                </p>
+              )}
               {profile?.affiliatedGymId ? (
                 <ButtonLink
                   href={`/gyms/${profile.affiliatedGymId}?tab=leaderboard`}
@@ -297,12 +320,27 @@ export function AthleteDashboardView() {
           <section>
             <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
               <h2 className="text-xl font-bold">Benchmarks</h2>
-              <Link
-                href="/benchmarks"
-                className="text-sm text-[var(--accent)] hover:underline"
-              >
-                Voir tous les benchmarks
-              </Link>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCalculatorOpen(true)}
+                  className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--accent-muted)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-black transition-colors"
+                  aria-label="Calculatrice %"
+                  title="Calculatrice %"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <circle cx="7" cy="7" r="3" />
+                    <circle cx="17" cy="17" r="3" />
+                    <line x1="4" y1="20" x2="20" y2="4" />
+                  </svg>
+                </button>
+                <Link
+                  href="/benchmarks"
+                  className="text-sm text-[var(--accent)] hover:underline"
+                >
+                  Voir tous les benchmarks
+                </Link>
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {(isMobile ? benchmarkPreviews.slice(0, 4) : benchmarkPreviews).map((item) => (
@@ -316,12 +354,13 @@ export function AthleteDashboardView() {
                   onVisibilityChange={
                     item.resultId && user?.uid
                       ? (publicChecked) => {
+                          const resultId = item.resultId as string;
                           setBenchmarkPreviews((prev) =>
                             prev.map((p) =>
-                              p.resultId === item.resultId ? { ...p, isPublic: publicChecked } : p
+                              p.resultId === resultId ? { ...p, isPublic: publicChecked } : p
                             )
                           );
-                          updateBenchmarkVisibility(user.uid, item.resultId, publicChecked)
+                          updateBenchmarkVisibility(user.uid, resultId, publicChecked)
                             .then(() =>
                               addToast(publicChecked ? "Benchmark visible par les autres." : "Benchmark masqué.")
                             )
@@ -329,7 +368,7 @@ export function AthleteDashboardView() {
                               addToast("Erreur", "error");
                               setBenchmarkPreviews((prev) =>
                                 prev.map((p) =>
-                                  p.resultId === item.resultId ? { ...p, isPublic: !publicChecked } : p
+                                  p.resultId === resultId ? { ...p, isPublic: !publicChecked } : p
                                 )
                               );
                             });
@@ -357,6 +396,12 @@ export function AthleteDashboardView() {
         </main>
       </div>
 
+      <PercentCalculatorDialog
+        open={calculatorOpen}
+        onClose={() => setCalculatorOpen(false)}
+        items={weightBenchmarksForCalc}
+        loading={weightBenchmarksLoading}
+      />
     </>
   );
 }

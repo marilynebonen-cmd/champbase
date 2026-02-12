@@ -9,6 +9,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { getGym, getUser, listPublicBenchmarkResultsForUser, getBenchmark } from "@/lib/db";
 import { formatResultValue } from "@/lib/benchmarkResultUtils";
 import type { UserProfile } from "@/types";
+import { getDivisionLabel } from "@/types";
 import type { GymWithId } from "@/types";
 import type { BenchmarkResultWithId } from "@/types";
 import type { BenchmarkWithId } from "@/types";
@@ -115,7 +116,7 @@ export default function GymMemberProfilePage() {
         <div>
           <h1 className="text-2xl font-bold text-[var(--foreground)]">{displayName}</h1>
           {member.preferredDivision && (
-            <p className="text-[var(--muted)] mt-1">{member.preferredDivision}</p>
+            <p className="text-[var(--muted)] mt-1">{getDivisionLabel(member.preferredDivision)}</p>
           )}
         </div>
       </div>

@@ -159,6 +159,19 @@ export async function listPublicBenchmarkResultsForUser(
   return snap.docs.map((d) => toResultWithId(d.id, d.data()));
 }
 
+/**
+ * List ALL benchmark results for a user (owner only – used to fix visibility).
+ * Firestore rules allow read only when request.auth.uid == uid.
+ */
+export async function listAllBenchmarkResultsForUser(
+  userId: string
+): Promise<BenchmarkResultWithId[]> {
+  const ref = resultsRef(userId);
+  const q = query(ref, orderBy("performedAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => toResultWithId(d.id, d.data()));
+}
+
 /** List most recently updated results (for mobile "4 latest" preview). limit default 4. */
 export async function listRecentBenchmarkResultsForUser(
   userId: string,

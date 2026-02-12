@@ -9,11 +9,14 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 import {
   getUser,
   updateUserProfile,
   updateUserPhoto,
   getGymsList,
+  listAllBenchmarkResultsForUser,
+  updateBenchmarkVisibility,
 } from "@/lib/db";
 import { uploadImageAndGetURL } from "@/lib/storage";
 import { resizeImageToProfileLogo } from "@/lib/bannerImage";
@@ -38,9 +41,11 @@ function ProfileContent() {
   const [benchmarksPublic, setBenchmarksPublic] = useState(true);
   const [skillsPublic, setSkillsPublic] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [publishingAllBenchmarks, setPublishingAllBenchmarks] = useState(false);
   const [photoCropSrc, setPhotoCropSrc] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (!user) return;
@@ -59,6 +64,31 @@ function ProfileContent() {
   useEffect(() => {
     getGymsList().then(setGyms);
   }, []);
+
+  async function handlePublishAllBenchmarks() {
+    if (!user?.uid) return;
+    setPublishingAllBenchmarks(true);
+    try {
+      const all = await listAllBenchmarkResultsForUser(user.uid);
+      const toPublish = all.filter((r) => r.isPublic !== true);
+      for (const r of toPublish) {
+        await updateBenchmarkVisibility(user.uid, r.id, true);
+      }
+      if (toPublish.length > 0) {
+        addToast(
+          toPublish.length === 1
+            ? "1 benchmark rendu public."
+            : `${toPublish.length} benchmarks rendus publics.`
+        );
+      } else {
+        addToast("Tous tes benchmarks sont déjà publics.");
+      }
+    } catch {
+      addToast("Erreur lors de la mise à jour.", "error");
+    } finally {
+      setPublishingAllBenchmarks(false);
+    }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -341,6 +371,20 @@ function ProfileContent() {
                     Compétences visibles par les autres
                   </span>
                 </label>
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handlePublishAllBenchmarks}
+                    disabled={publishingAllBenchmarks}
+                  >
+                    {publishingAllBenchmarks ? "Envoi…" : "Rendre tous mes benchmarks publics"}
+                  </Button>
+                  <p className="text-xs text-[var(--muted)] mt-1">
+                    Met à jour chaque résultat de benchmark en « public » en un clic.
+                  </p>
+                </div>
               </div>
             </div>
 
