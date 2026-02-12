@@ -23,6 +23,11 @@ service cloud.firestore {
         );
         allow create, update, delete: if request.auth != null && request.auth.uid == uid;
       }
+
+      // skills: compétences checklist – owner read/write only
+      match /skills/{movementId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
     }
 
     // benchmarks: public read; write only organizer (user with roles.organizer)

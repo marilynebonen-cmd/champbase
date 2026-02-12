@@ -23,7 +23,7 @@ import type { EventWithId } from "@/types";
 import type { EventRegistrationWithId } from "@/types";
 import { useToast } from "@/contexts/ToastContext";
 import { BenchmarkCard } from "./BenchmarkCard";
-import { SkillCard } from "./SkillCard";
+import { SkillsPreview } from "@/components/skills/SkillsPreview";
 import { PercentCalculatorDialog } from "@/components/PercentCalculatorDialog";
 
 /** Preview des benchmarks affichés sur le dashboard (label + nameLower pour matcher Firestore). */
@@ -380,19 +380,7 @@ export function AthleteDashboardView() {
             </div>
           </section>
 
-          {/* Compétences */}
-          <section>
-            <h2 className="text-xl font-bold mb-3">Compétences</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {PLACEHOLDER_SKILLS.map((skill, i) => (
-                <SkillCard
-                  key={i}
-                  title={skill.title}
-                  level={skill.level}
-                />
-              ))}
-            </div>
-          </section>
+          <SkillsPreview />
         </main>
       </div>
 

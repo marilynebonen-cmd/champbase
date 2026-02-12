@@ -14,6 +14,7 @@ export * from "@/lib/firestore/feed";
 export * from "@/lib/firestore/gymFeed";
 export * from "@/lib/firestore/benchmarks";
 export * from "@/lib/firestore/benchmarkResults";
+export * from "@/lib/firestore/skills";
 export {
   getUserWeightBenchmarks,
   type UserWeightBenchmark,
