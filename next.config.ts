@@ -16,7 +16,7 @@ export default withPWA({
       urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
       handler: "CacheFirst",
       options: {
-        cacheName: "google-fonts",
+        cacheName: "google_fonts",
         expiration: {
           maxEntries: 4,
           maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
@@ -27,7 +27,7 @@ export default withPWA({
       urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
       handler: "CacheFirst",
       options: {
-        cacheName: "firebase-storage",
+        cacheName: "firebase_storage",
         expiration: {
           maxEntries: 60,
           maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
@@ -38,7 +38,7 @@ export default withPWA({
       urlPattern: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
       handler: "CacheFirst",
       options: {
-        cacheName: "static-image-assets",
+        cacheName: "static_image_assets",
         expiration: {
           maxEntries: 64,
           maxAgeSeconds: 24 * 60 * 60, // 24 hours
@@ -49,7 +49,7 @@ export default withPWA({
       urlPattern: /\.(?:js|css)$/i,
       handler: "StaleWhileRevalidate",
       options: {
-        cacheName: "static-resources",
+        cacheName: "static_resources",
         expiration: {
           maxEntries: 32,
           maxAgeSeconds: 24 * 60 * 60, // 24 hours
@@ -60,7 +60,7 @@ export default withPWA({
       urlPattern: /^https:\/\/.*\.firebaseio\.com\/.*/i,
       handler: "NetworkFirst",
       options: {
-        cacheName: "firebase-data",
+        cacheName: "firebase_data",
         networkTimeoutSeconds: 10,
         expiration: {
           maxEntries: 50,
