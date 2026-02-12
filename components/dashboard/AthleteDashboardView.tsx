@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
@@ -11,24 +11,31 @@ import {
   getGym,
   getRegistrationsByUser,
   getEvent,
+  listBenchmarks,
+  listBenchmarkResultsForUser,
 } from "@/lib/db";
+import { getBestResult, formatResultValue } from "@/lib/benchmarkResultUtils";
 import type { UserProfile } from "@/types";
 import type { EventWithId } from "@/types";
 import type { EventRegistrationWithId } from "@/types";
 import { BenchmarkCard } from "./BenchmarkCard";
-import { EditBenchmarkModal } from "./EditBenchmarkModal";
 import { SkillCard } from "./SkillCard";
 
-const BENCHMARK_IDS = [
-  { id: "backSquat", label: "1RM Back Squat" },
-  { id: "benchPress", label: "1RM Bench Press" },
-  { id: "cleanJerk", label: "1RM Clean & Jerk" },
-  { id: "deadlift", label: "1RM Deadlift" },
-  { id: "frontSquat", label: "1RM Front Squat" },
-  { id: "hangPowerClean", label: "1RM Hang Power Clean" },
+/** Preview des benchmarks affichés sur le dashboard (label + nameLower pour matcher Firestore). */
+const BENCHMARK_PREVIEW_NAMES = [
+  { label: "1RM Back Squat", nameLower: "back squat" },
+  { label: "1RM Bench Press", nameLower: "bench press" },
+  { label: "1RM Clean & Jerk", nameLower: "clean & jerk" },
+  { label: "1RM Deadlift", nameLower: "deadlift" },
+  { label: "1RM Front Squat", nameLower: "front squat" },
+  { label: "1RM Snatch", nameLower: "snatch" },
 ] as const;
 
-type BenchmarkId = (typeof BENCHMARK_IDS)[number]["id"];
+export type BenchmarkPreviewItem = {
+  label: string;
+  benchmarkId: string | null;
+  formattedValue: string;
+};
 
 const PLACEHOLDER_SKILLS = [
   { title: "Compétence 1", level: 60 },
@@ -47,20 +54,64 @@ export function AthleteDashboardView() {
   const [clubName, setClubName] = useState<string | null>(null);
   const [registrations, setRegistrations] = useState<EventRegistrationWithId[]>([]);
   const [events, setEvents] = useState<EventWithId[]>([]);
-  const [benchmarks, setBenchmarks] = useState<Record<BenchmarkId, string>>({
-    backSquat: "",
-    benchPress: "",
-    cleanJerk: "",
-    deadlift: "",
-    frontSquat: "",
-    hangPowerClean: "",
-  });
-  const [editingBenchmark, setEditingBenchmark] = useState<BenchmarkId | null>(null);
+  const [benchmarkPreviews, setBenchmarkPreviews] = useState<BenchmarkPreviewItem[]>(
+    BENCHMARK_PREVIEW_NAMES.map(({ label }) => ({
+      label,
+      benchmarkId: null,
+      formattedValue: "—",
+    }))
+  );
 
   useEffect(() => {
     if (!user) return;
     getUser(user.uid).then(setProfile);
   }, [user]);
+
+  /** Charge les résultats des benchmarks 1RM pour l’aperçu dashboard (même format que page benchmarks). */
+  useEffect(() => {
+    if (!user?.uid) return;
+    let cancelled = false;
+    listBenchmarks({ category: "1rm", pageSize: 50 })
+      .then((res) => {
+        if (cancelled) return;
+        const benchList = res.items;
+        return Promise.all(
+          BENCHMARK_PREVIEW_NAMES.map(async ({ label, nameLower }) => {
+            const bench = benchList.find((b) => b.nameLower === nameLower) ?? null;
+            if (!bench) {
+              return { label, benchmarkId: null, formattedValue: "—" };
+            }
+            const results = await listBenchmarkResultsForUser(user.uid, bench.id);
+            const pr = getBestResult(results, bench.scoreType);
+            const formattedValue = pr
+              ? formatResultValue(pr, bench.scoreType)
+              : "—";
+            return {
+              label,
+              benchmarkId: bench.id,
+              formattedValue,
+            };
+          })
+        );
+      })
+      .then((previews) => {
+        if (!cancelled && Array.isArray(previews)) setBenchmarkPreviews(previews);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setBenchmarkPreviews(
+            BENCHMARK_PREVIEW_NAMES.map(({ label }) => ({
+              label,
+              benchmarkId: null,
+              formattedValue: "—",
+            }))
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid]);
 
   useEffect(() => {
     if (!profile?.affiliatedGymId) {
@@ -87,11 +138,6 @@ export function AthleteDashboardView() {
         setRegistrations([]);
       });
   }, [user]);
-
-  function handleBenchmarkSave(id: BenchmarkId, value: string) {
-    setBenchmarks((prev) => ({ ...prev, [id]: value }));
-    setEditingBenchmark(null);
-  }
 
   const displayName =
     [profile?.firstName, profile?.lastName].filter(Boolean).join(" ") ||
@@ -242,12 +288,12 @@ export function AthleteDashboardView() {
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {BENCHMARK_IDS.map(({ id, label }) => (
+              {benchmarkPreviews.map((item) => (
                 <BenchmarkCard
-                  key={id}
-                  title={label}
-                  value={benchmarks[id]}
-                  onEdit={() => setEditingBenchmark(id)}
+                  key={item.label}
+                  title={item.label}
+                  value={item.formattedValue}
+                  href={item.benchmarkId ? `/benchmarks/${item.benchmarkId}` : undefined}
                 />
               ))}
             </div>
@@ -269,16 +315,6 @@ export function AthleteDashboardView() {
         </main>
       </div>
 
-      {/* Edit benchmark modal */}
-      {editingBenchmark && (
-        <EditBenchmarkModal
-          title={BENCHMARK_IDS.find((b) => b.id === editingBenchmark)!.label}
-          value={benchmarks[editingBenchmark]}
-          unit="kg"
-          onSave={(value) => handleBenchmarkSave(editingBenchmark, value)}
-          onCancel={() => setEditingBenchmark(null)}
-        />
-      )}
     </>
   );
 }

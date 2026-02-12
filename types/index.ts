@@ -2,6 +2,9 @@
  * Champ – shared TypeScript types and Firestore document shapes.
  */
 
+/** Firestore Timestamp or JS Date (for reading/writing). */
+export type TimestampLike = { seconds: number; nanoseconds: number } | Date;
+
 // ─── Divisions ─────────────────────────────────────────────────────────────
 export const DIVISIONS = ["M_RX", "M_SCALED", "F_RX", "F_SCALED"] as const;
 export type Division = (typeof DIVISIONS)[number];
@@ -203,7 +206,53 @@ export type GymFeedItem = {
   displayName: string;
 };
 
-export type TimestampLike = { seconds: number; nanoseconds: number } | Date;
+// ─── Benchmarks (Firestore: /benchmarks/{id}) ───────────────────────────────
+export const BENCHMARK_CATEGORIES = ["girls", "hero", "1rm", "open", "custom"] as const;
+export type BenchmarkCategory = (typeof BENCHMARK_CATEGORIES)[number];
+
+export const BENCHMARK_SCORE_TYPES = ["time", "reps", "weight", "time_or_reps", "custom"] as const;
+export type BenchmarkScoreType = (typeof BENCHMARK_SCORE_TYPES)[number];
+
+export const BENCHMARK_TRACKS = ["rx", "scaled"] as const;
+export type BenchmarkTrack = (typeof BENCHMARK_TRACKS)[number];
+
+export type Benchmark = {
+  name: string;
+  nameLower: string;
+  category: BenchmarkCategory;
+  scoreType: BenchmarkScoreType;
+  timeCapSeconds?: number | null;
+  descriptionRx?: string | null;
+  descriptionScaled?: string | null;
+  defaultTrack: BenchmarkTrack;
+  movements?: string[] | null;
+  source: "seed" | "user";
+  createdAt: TimestampLike;
+  updatedAt: TimestampLike;
+};
+
+export type BenchmarkWithId = Benchmark & { id: string };
+
+// ─── Benchmark results (Firestore: users/{uid}/benchmark_results/{id}) ──────
+export const BENCHMARK_RESULT_UNITS = ["lb", "kg"] as const;
+export type BenchmarkResultUnit = (typeof BENCHMARK_RESULT_UNITS)[number];
+
+export type BenchmarkResult = {
+  benchmarkId: string;
+  track: BenchmarkTrack;
+  scoreType: BenchmarkScoreType;
+  timeSeconds?: number | null;
+  reps?: number | null;
+  weight?: number | null;
+  unit?: BenchmarkResultUnit | null;
+  completedWithinTimeCap?: boolean | null;
+  performedAt: TimestampLike;
+  note?: string | null;
+  createdAt: TimestampLike;
+  updatedAt: TimestampLike;
+};
+
+export type BenchmarkResultWithId = BenchmarkResult & { id: string };
 
 // ─── WOD (subcollection: gyms/{gymId}/wods/{wodId}) ─────────────────────────
 /** Score type for WOD: time (lower better), reps/weight (higher better). */

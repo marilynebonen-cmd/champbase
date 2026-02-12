@@ -12,3 +12,5 @@ export * from "@/lib/firestore/scores";
 export * from "@/lib/firestore/registrations";
 export * from "@/lib/firestore/feed";
 export * from "@/lib/firestore/gymFeed";
+export * from "@/lib/firestore/benchmarks";
+export * from "@/lib/firestore/benchmarkResults";
