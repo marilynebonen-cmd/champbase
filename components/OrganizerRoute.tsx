@@ -24,7 +24,7 @@ export function OrganizerRoute({ children }: { children: ReactNode }) {
       if (cancelled) return;
       const isOrganizer = profile?.roles?.organizer ?? false;
       setAllowed(isOrganizer);
-      if (!isOrganizer) router.replace("/dashboard");
+      if (!isOrganizer) router.replace("/dashboard/athlete");
     });
     return () => {
       cancelled = true;
