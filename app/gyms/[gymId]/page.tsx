@@ -606,25 +606,27 @@ export default function GymProfilePage() {
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {members.map((member) => (
                 <li key={member.uid}>
-                  <Card className="flex items-center gap-4 p-4 hover:border-[var(--accent)]/30 transition-colors">
-                    <Avatar
-                      photoURL={member.photoURL}
-                      displayName={member.displayName}
-                      firstName={member.firstName}
-                      lastName={member.lastName}
-                      size="md"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold truncate text-[var(--foreground)]">
-                        {[member.firstName, member.lastName].filter(Boolean).join(" ") ||
-                          member.displayName ||
-                          "—"}
-                      </p>
-                      {member.preferredDivision && (
-                        <p className="text-[var(--muted)] text-sm mt-0.5">{member.preferredDivision}</p>
-                      )}
-                    </div>
-                  </Card>
+                  <Link href={`/gyms/${gymId}/members/${member.uid}`}>
+                    <Card className="flex items-center gap-4 p-4 hover:border-[var(--accent)]/30 transition-colors">
+                      <Avatar
+                        photoURL={member.photoURL}
+                        displayName={member.displayName}
+                        firstName={member.firstName}
+                        lastName={member.lastName}
+                        size="md"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold truncate text-[var(--foreground)]">
+                          {[member.firstName, member.lastName].filter(Boolean).join(" ") ||
+                            member.displayName ||
+                            "—"}
+                        </p>
+                        {member.preferredDivision && (
+                          <p className="text-[var(--muted)] text-sm mt-0.5">{member.preferredDivision}</p>
+                        )}
+                      </div>
+                    </Card>
+                  </Link>
                 </li>
               ))}
             </ul>

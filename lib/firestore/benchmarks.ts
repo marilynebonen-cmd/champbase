@@ -50,11 +50,14 @@ function toBenchmarkWithId(id: string, d: Record<string, unknown>): BenchmarkWit
   };
 }
 
+export type ListBenchmarksSort = "name" | "recent";
+
 export type ListBenchmarksParams = {
   search?: string;
   category?: BenchmarkCategory;
   page?: number;
   pageSize?: number;
+  sort?: ListBenchmarksSort;
 };
 
 export type ListBenchmarksResult = {
@@ -67,7 +70,7 @@ export type ListBenchmarksResult = {
  * List benchmarks with optional search (prefix on nameLower), category filter, and pagination.
  */
 export async function listBenchmarks(params: ListBenchmarksParams = {}): Promise<ListBenchmarksResult> {
-  const { search, category, page = 1, pageSize = PAGE_SIZE } = params;
+  const { search, category, page = 1, pageSize = PAGE_SIZE, sort = "name" } = params;
   const ref = collection(db, COLLECTION);
 
   const constraints: ReturnType<typeof where>[] = [];
@@ -78,7 +81,10 @@ export async function listBenchmarks(params: ListBenchmarksParams = {}): Promise
     constraints.push(where("nameLower", "<=", searchLower + "\uf8ff"));
   }
 
-  const order = orderBy("nameLower", "asc");
+  const order =
+    sort === "recent"
+      ? orderBy("updatedAt", "desc")
+      : orderBy("nameLower", "asc");
   const fetchSize = page * pageSize + 1;
   const q = query(ref, ...constraints, order, limit(fetchSize));
   const snap = await getDocs(q);

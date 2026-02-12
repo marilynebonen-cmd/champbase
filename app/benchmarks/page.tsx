@@ -5,7 +5,12 @@ import Link from "next/link";
 import { Layout } from "@/components/ui/Layout";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { listBenchmarks, listBenchmarkResultsForUser, getUser } from "@/lib/db";
+import {
+  listBenchmarks,
+  listBenchmarkResultsForUser,
+  getUser,
+  type ListBenchmarksSort,
+} from "@/lib/db";
 import { getBestResult, formatResultValue } from "@/lib/benchmarkResultUtils";
 import { useAuth } from "@/contexts/AuthContext";
 import type { BenchmarkWithId, BenchmarkCategory } from "@/types";
@@ -39,6 +44,8 @@ export default function BenchmarksPage() {
   const [category, setCategory] = useState<BenchmarkCategory | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [nextPage, setNextPage] = useState<number | null>(null);
+  const [sort, setSort] = useState<ListBenchmarksSort>("name");
+  const [error, setError] = useState<string | null>(null);
   const [descBenchmark, setDescBenchmark] = useState<BenchmarkWithId | null>(null);
   const [profile, setProfile] = useState<{ roles?: { organizer?: boolean } } | null>(null);
   const [resultsByBenchmarkId, setResultsByBenchmarkId] = useState<Record<string, string>>({});
@@ -85,30 +92,33 @@ export default function BenchmarksPage() {
   const fetchList = useCallback(
     async (pageNum: number, append: boolean) => {
       if (!append) setLoading(true);
+      setError(null);
       try {
         const res = await listBenchmarks({
           search: searchDebounced || undefined,
           category,
           page: pageNum,
           pageSize: PAGE_SIZE,
+          sort,
         });
         setItems((prev) => (append ? [...prev, ...res.items] : res.items));
         setNextPage(res.nextPage);
       } catch (e) {
         console.error("[benchmarks list]", e);
+        setError(e instanceof Error ? e.message : "Erreur lors du chargement.");
         if (!append) setItems([]);
         setNextPage(null);
       } finally {
         setLoading(false);
       }
     },
-    [searchDebounced, category]
+    [searchDebounced, category, sort]
   );
 
   useEffect(() => {
     setPage(1);
     setItems([]);
-  }, [searchDebounced, category]);
+  }, [searchDebounced, category, sort]);
 
   useEffect(() => {
     fetchList(page, page > 1);
@@ -184,7 +194,40 @@ export default function BenchmarksPage() {
             </button>
           ))}
         </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-[var(--muted)]">Tri:</span>
+          <button
+            type="button"
+            onClick={() => setSort("name")}
+            className={[
+              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+              sort === "name"
+                ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+                : "bg-[var(--card)] border border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--card-border-hover)]",
+            ].join(" ")}
+          >
+            A–Z
+          </button>
+          <button
+            type="button"
+            onClick={() => setSort("recent")}
+            className={[
+              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+              sort === "recent"
+                ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+                : "bg-[var(--card)] border border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--card-border-hover)]",
+            ].join(" ")}
+          >
+            Récent
+          </button>
+        </div>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-3 text-[var(--foreground)]">
+          {error}
+        </div>
+      )}
 
       {loading ? (
         <p className="text-[var(--muted)] py-8">Chargement…</p>

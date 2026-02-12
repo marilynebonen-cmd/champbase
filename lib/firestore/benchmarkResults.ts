@@ -13,6 +13,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   serverTimestamp,
   type Timestamp,
 } from "firebase/firestore";
@@ -46,6 +47,7 @@ function toResultWithId(id: string, d: Record<string, unknown>): BenchmarkResult
     completedWithinTimeCap: d.completedWithinTimeCap != null ? (d.completedWithinTimeCap as boolean) : null,
     performedAt: toDate(d.performedAt as Timestamp) ?? new Date(),
     note: (d.note as string | null) ?? null,
+    isPublic: d.isPublic === false ? false : true,
     createdAt: toDate(d.createdAt as Timestamp) ?? new Date(),
     updatedAt: toDate(d.updatedAt as Timestamp) ?? new Date(),
   };
@@ -72,6 +74,7 @@ export async function addBenchmarkResult(
     completedWithinTimeCap: data.completedWithinTimeCap ?? null,
     performedAt: data.performedAt instanceof Date ? data.performedAt : data.performedAt,
     note: data.note ?? null,
+    isPublic: data.isPublic !== false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -106,7 +109,7 @@ export async function getBenchmarkResult(
 
 const RESULT_EDIT_FIELDS = [
   "track", "scoreType", "timeSeconds", "reps", "weight", "unit",
-  "completedWithinTimeCap", "performedAt", "note",
+  "completedWithinTimeCap", "performedAt", "note", "isPublic",
 ] as const;
 
 export async function updateBenchmarkResult(
@@ -127,4 +130,46 @@ export async function updateBenchmarkResult(
 export async function deleteBenchmarkResult(userId: string, resultId: string): Promise<void> {
   const ref = doc(db, USERS_COLLECTION, userId, SUBCOLLECTION, resultId);
   await deleteDoc(ref);
+}
+
+/** Update only isPublic (visibility). Optimistic UI + toast. */
+export async function updateBenchmarkVisibility(
+  userId: string,
+  resultId: string,
+  isPublic: boolean
+): Promise<void> {
+  const ref = doc(db, USERS_COLLECTION, userId, SUBCOLLECTION, resultId);
+  await updateDoc(ref, {
+    isPublic,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/** List all results for a user where isPublic == true (for public profile view). */
+export async function listPublicBenchmarkResultsForUser(
+  userId: string
+): Promise<BenchmarkResultWithId[]> {
+  const ref = resultsRef(userId);
+  const q = query(
+    ref,
+    where("isPublic", "==", true),
+    orderBy("performedAt", "desc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => toResultWithId(d.id, d.data()));
+}
+
+/** List most recently updated results (for mobile "4 latest" preview). limit default 4. */
+export async function listRecentBenchmarkResultsForUser(
+  userId: string,
+  limitCount = 4
+): Promise<BenchmarkResultWithId[]> {
+  const ref = resultsRef(userId);
+  const q = query(
+    ref,
+    orderBy("updatedAt", "desc"),
+    limit(limitCount)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => toResultWithId(d.id, d.data()));
 }

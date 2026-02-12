@@ -35,6 +35,8 @@ function ProfileContent() {
   const [affiliatedGymId, setAffiliatedGymId] = useState("");
   const [preferredDivision, setPreferredDivision] = useState<Division | "">("");
   const [photoURL, setPhotoURL] = useState("");
+  const [benchmarksPublic, setBenchmarksPublic] = useState(true);
+  const [skillsPublic, setSkillsPublic] = useState(true);
   const [saving, setSaving] = useState(false);
   const [photoCropSrc, setPhotoCropSrc] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -71,6 +73,8 @@ function ProfileContent() {
         affiliatedGymId: affiliatedGymId || undefined,
         preferredDivision: preferredDivision || undefined,
         photoURL: photoURL || undefined,
+        benchmarksPublic,
+        skillsPublic,
       });
       setProfile((prev) =>
         prev
@@ -83,6 +87,8 @@ function ProfileContent() {
               affiliatedGymId: affiliatedGymId || undefined,
               preferredDivision: preferredDivision || undefined,
               photoURL: photoURL || undefined,
+              benchmarksPublic,
+              skillsPublic,
             }
           : null
       );
@@ -302,6 +308,39 @@ function ProfileContent() {
                     ))}
                   </select>
                 </div>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-[var(--card-border)]">
+              <h2 className="heading-3 mb-1">Visibilité du profil</h2>
+              <p className="caption mb-4">
+                Ces options définissent ce que les autres membres voient sur ton profil public (page du club).
+              </p>
+              <div className="flex flex-col gap-4">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={benchmarksPublic}
+                    onChange={(e) => setBenchmarksPublic(e.target.checked)}
+                    className="rounded border-[var(--card-border)] bg-[var(--background)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                    aria-label="Rendre mes benchmarks visibles"
+                  />
+                  <span className="text-sm font-medium text-[var(--foreground)]">
+                    Benchmarks visibles par les autres
+                  </span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={skillsPublic}
+                    onChange={(e) => setSkillsPublic(e.target.checked)}
+                    className="rounded border-[var(--card-border)] bg-[var(--background)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                    aria-label="Rendre mes compétences visibles"
+                  />
+                  <span className="text-sm font-medium text-[var(--foreground)]">
+                    Compétences visibles par les autres
+                  </span>
+                </label>
               </div>
             </div>
 

@@ -34,26 +34,7 @@ export async function getUsersByGym(gymId: string): Promise<UserProfile[]> {
   const q = query(ref, where("gymId", "==", gymId));
   const snap = await getDocs(q);
   return snap.docs
-    .map((d) => {
-      const data = d.data();
-      const uid = d.id;
-      const affiliatedGymId = (data.gymId as string | undefined) ?? (data.affiliatedGymId as string | undefined);
-      return {
-        uid,
-        displayName: (data.displayName as string) ?? "",
-        email: (data.email as string) ?? "",
-        roles: (data.roles as UserProfile["roles"]) ?? { athlete: false, organizer: false },
-        firstName: data.firstName as string | undefined,
-        lastName: data.lastName as string | undefined,
-        dateOfBirth: data.dateOfBirth as string | undefined,
-        affiliatedGymId: affiliatedGymId ?? undefined,
-        preferredDivision: data.preferredDivision as UserProfile["preferredDivision"],
-        photoURL: data.photoURL as string | undefined,
-        createdAt: (data.createdAt as Timestamp)?.toDate?.() ?? new Date(),
-        updatedAt: (data.updatedAt as Timestamp)?.toDate?.() ?? new Date(),
-      } as UserProfile;
-    })
-    .filter(Boolean);
+    .map((d) => docToUserProfile(d.id, d.data()));
 }
 
 /** Subscribe to gym members in real-time. Returns unsubscribe function. */
@@ -69,27 +50,7 @@ export function subscribeGymMembers(
   const q = query(ref, where("gymId", "==", gymId));
   
   const unsubscribe = onSnapshot(q, (snap) => {
-    const members = snap.docs
-      .map((d) => {
-        const data = d.data();
-        const uid = d.id;
-        const affiliatedGymId = (data.gymId as string | undefined) ?? (data.affiliatedGymId as string | undefined);
-        return {
-          uid,
-          displayName: (data.displayName as string) ?? "",
-          email: (data.email as string) ?? "",
-          roles: (data.roles as UserProfile["roles"]) ?? { athlete: false, organizer: false },
-          firstName: data.firstName as string | undefined,
-          lastName: data.lastName as string | undefined,
-          dateOfBirth: data.dateOfBirth as string | undefined,
-          affiliatedGymId: affiliatedGymId ?? undefined,
-          preferredDivision: data.preferredDivision as UserProfile["preferredDivision"],
-          photoURL: data.photoURL as string | undefined,
-          createdAt: (data.createdAt as Timestamp)?.toDate?.() ?? new Date(),
-          updatedAt: (data.updatedAt as Timestamp)?.toDate?.() ?? new Date(),
-        } as UserProfile;
-      })
-      .filter(Boolean);
+    const members = snap.docs.map((d) => docToUserProfile(d.id, d.data()));
     callback(members);
   });
   
@@ -111,6 +72,8 @@ function docToUserProfile(id: string, d: Record<string, unknown>): UserProfile {
     affiliatedGymId: gymId ?? undefined,
     preferredDivision: d.preferredDivision as Division | undefined,
     photoURL: d.photoURL as string | undefined,
+    benchmarksPublic: d.benchmarksPublic === false ? false : true,
+    skillsPublic: d.skillsPublic === false ? false : true,
     createdAt: toDate(d.createdAt as Timestamp) ?? new Date(),
     updatedAt: toDate(d.updatedAt as Timestamp) ?? new Date(),
   };
@@ -175,6 +138,8 @@ export async function updateUserProfile(
       | "affiliatedGymId"
       | "preferredDivision"
       | "photoURL"
+      | "benchmarksPublic"
+      | "skillsPublic"
     >
   >
 ): Promise<void> {
@@ -192,6 +157,8 @@ export async function updateUserProfile(
   if (data.preferredDivision !== undefined)
     payload.preferredDivision = data.preferredDivision;
   if (data.photoURL !== undefined) payload.photoURL = data.photoURL;
+  if (data.benchmarksPublic !== undefined) payload.benchmarksPublic = data.benchmarksPublic;
+  if (data.skillsPublic !== undefined) payload.skillsPublic = data.skillsPublic;
   await updateDoc(ref, payload);
 }
 

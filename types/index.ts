@@ -30,6 +30,10 @@ export type UserProfile = {
   affiliatedGymId?: string;
   preferredDivision?: Division;
   photoURL?: string;
+  /** Si false, les benchmarks ne sont pas visibles sur le profil public. Défaut true. */
+  benchmarksPublic?: boolean;
+  /** Si false, les compétences ne sont pas visibles sur le profil public. Défaut true. */
+  skillsPublic?: boolean;
   createdAt: TimestampLike;
   updatedAt: TimestampLike;
 };
@@ -248,6 +252,8 @@ export type BenchmarkResult = {
   completedWithinTimeCap?: boolean | null;
   performedAt: TimestampLike;
   note?: string | null;
+  /** Default true if absent (rétro-compat). When false, only owner sees this result. */
+  isPublic?: boolean;
   createdAt: TimestampLike;
   updatedAt: TimestampLike;
 };

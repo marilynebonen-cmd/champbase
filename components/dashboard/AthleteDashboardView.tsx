@@ -18,6 +18,7 @@ import { getBestResult, formatResultValue } from "@/lib/benchmarkResultUtils";
 import type { UserProfile } from "@/types";
 import type { EventWithId } from "@/types";
 import type { EventRegistrationWithId } from "@/types";
+import { useToast } from "@/contexts/ToastContext";
 import { BenchmarkCard } from "./BenchmarkCard";
 import { SkillCard } from "./SkillCard";
 
@@ -35,6 +36,8 @@ export type BenchmarkPreviewItem = {
   label: string;
   benchmarkId: string | null;
   formattedValue: string;
+  resultId: string | null;
+  isPublic: boolean;
 };
 
 const PLACEHOLDER_SKILLS = [
@@ -59,13 +62,25 @@ export function AthleteDashboardView() {
       label,
       benchmarkId: null,
       formattedValue: "—",
+      resultId: null,
+      isPublic: true,
     }))
   );
+  const [isMobile, setIsMobile] = useState(false);
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (!user) return;
     getUser(user.uid).then(setProfile);
   }, [user]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   /** Charge les résultats des benchmarks 1RM pour l’aperçu dashboard (même format que page benchmarks). */
   useEffect(() => {
@@ -104,6 +119,8 @@ export function AthleteDashboardView() {
               label,
               benchmarkId: null,
               formattedValue: "—",
+              resultId: null,
+              isPublic: true,
             }))
           );
         }
@@ -288,12 +305,37 @@ export function AthleteDashboardView() {
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {benchmarkPreviews.map((item) => (
+              {(isMobile ? benchmarkPreviews.slice(0, 4) : benchmarkPreviews).map((item) => (
                 <BenchmarkCard
                   key={item.label}
                   title={item.label}
                   value={item.formattedValue}
                   href={item.benchmarkId ? `/benchmarks/${item.benchmarkId}` : undefined}
+                  resultId={item.resultId}
+                  isPublic={item.isPublic}
+                  onVisibilityChange={
+                    item.resultId && user?.uid
+                      ? (publicChecked) => {
+                          setBenchmarkPreviews((prev) =>
+                            prev.map((p) =>
+                              p.resultId === item.resultId ? { ...p, isPublic: publicChecked } : p
+                            )
+                          );
+                          updateBenchmarkVisibility(user.uid, item.resultId, publicChecked)
+                            .then(() =>
+                              addToast(publicChecked ? "Benchmark visible par les autres." : "Benchmark masqué.")
+                            )
+                            .catch(() => {
+                              addToast("Erreur", "error");
+                              setBenchmarkPreviews((prev) =>
+                                prev.map((p) =>
+                                  p.resultId === item.resultId ? { ...p, isPublic: !publicChecked } : p
+                                )
+                              );
+                            });
+                        }
+                      : undefined
+                  }
                 />
               ))}
             </div>

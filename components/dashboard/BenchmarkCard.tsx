@@ -10,10 +10,22 @@ type BenchmarkCardProps = {
   href?: string;
   /** Déprécié : utiliser href. Si href absent, le bouton edit n’est pas affiché. */
   onEdit?: () => void;
+  resultId?: string | null;
+  isPublic?: boolean;
+  onVisibilityChange?: (isPublic: boolean) => void;
 };
 
-export function BenchmarkCard({ title, value, href, onEdit }: BenchmarkCardProps) {
+export function BenchmarkCard({
+  title,
+  value,
+  href,
+  onEdit,
+  resultId,
+  isPublic = true,
+  onVisibilityChange,
+}: BenchmarkCardProps) {
   const showEdit = href != null || onEdit != null;
+  const showPublicToggle = resultId != null && onVisibilityChange != null;
   return (
     <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card)] p-4 flex flex-col">
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -45,6 +57,18 @@ export function BenchmarkCard({ title, value, href, onEdit }: BenchmarkCardProps
       <p className="text-xl font-semibold text-[var(--foreground)] mt-auto">
         {value || "—"}
       </p>
+      {showPublicToggle && (
+        <label className="flex items-center gap-2 mt-3 text-sm text-[var(--muted)] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => onVisibilityChange(e.target.checked)}
+            className="rounded border-[var(--card-border)] accent-[var(--accent)]"
+            aria-label={`Rendre ce benchmark ${isPublic ? "privé" : "public"}`}
+          />
+          <span>Public</span>
+        </label>
+      )}
     </div>
   );
 }

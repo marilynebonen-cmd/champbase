@@ -15,9 +15,13 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow create, update, delete: if request.auth != null && request.auth.uid == uid;
 
-      // benchmark_results: athlete can read/write only their own results
+      // benchmark_results: owner read/write all; others read only isPublic == true
       match /benchmark_results/{resultId} {
-        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read: if request.auth != null && (
+          request.auth.uid == uid
+          || resource.data.isPublic == true
+        );
+        allow create, update, delete: if request.auth != null && request.auth.uid == uid;
       }
     }
 
