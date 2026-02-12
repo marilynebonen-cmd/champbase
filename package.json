@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "deploy": "git add . && git commit -m \"deploy\" --allow-empty && git push",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
