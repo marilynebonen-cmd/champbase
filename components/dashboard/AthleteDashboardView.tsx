@@ -342,11 +342,11 @@ export function AthleteDashboardView() {
                 </Link>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(isMobile ? benchmarkPreviews.slice(0, 4) : benchmarkPreviews).map((item) => (
-                <BenchmarkCard
-                  key={item.label}
-                  title={item.label}
+            <div className="grid grid-cols-2 gap-4">
+              {benchmarkPreviews.slice(0, 4).map((item) => (
+                <div key={item.label} className="min-h-[7.5rem]">
+                  <BenchmarkCard
+                    title={item.label}
                   value={item.formattedValue}
                   href={item.benchmarkId ? `/benchmarks/${item.benchmarkId}` : undefined}
                   resultId={item.resultId}
@@ -376,6 +376,7 @@ export function AthleteDashboardView() {
                       : undefined
                   }
                 />
+                </div>
               ))}
             </div>
           </section>

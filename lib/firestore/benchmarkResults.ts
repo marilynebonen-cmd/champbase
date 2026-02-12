@@ -172,6 +172,15 @@ export async function listAllBenchmarkResultsForUser(
   return snap.docs.map((d) => toResultWithId(d.id, d.data()));
 }
 
+/** Met à jour la visibilité de tous les résultats benchmark (profil : tout public ou tout privé). */
+export async function updateAllBenchmarkVisibility(
+  userId: string,
+  isPublic: boolean
+): Promise<void> {
+  const all = await listAllBenchmarkResultsForUser(userId);
+  await Promise.all(all.map((r) => updateBenchmarkVisibility(userId, r.id, isPublic)));
+}
+
 /** List most recently updated results (for mobile "4 latest" preview). limit default 4. */
 export async function listRecentBenchmarkResultsForUser(
   userId: string,

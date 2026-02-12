@@ -16,7 +16,8 @@ import {
   updateUserPhoto,
   getGymsList,
   listAllBenchmarkResultsForUser,
-  updateBenchmarkVisibility,
+  updateAllBenchmarkVisibility,
+  setAllSkillCategoryVisibility,
 } from "@/lib/db";
 import { uploadImageAndGetURL } from "@/lib/storage";
 import { resizeImageToProfileLogo } from "@/lib/bannerImage";
@@ -42,6 +43,8 @@ function ProfileContent() {
   const [skillsPublic, setSkillsPublic] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishingAllBenchmarks, setPublishingAllBenchmarks] = useState(false);
+  const [updatingBenchmarksVisibility, setUpdatingBenchmarksVisibility] = useState(false);
+  const [updatingSkillsVisibility, setUpdatingSkillsVisibility] = useState(false);
   const [photoCropSrc, setPhotoCropSrc] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -65,24 +68,46 @@ function ProfileContent() {
     getGymsList().then(setGyms);
   }, []);
 
+  async function handleBenchmarksVisibilityChange(visible: boolean) {
+    if (!user?.uid) return;
+    setBenchmarksPublic(visible);
+    setUpdatingBenchmarksVisibility(true);
+    try {
+      await updateAllBenchmarkVisibility(user.uid, visible);
+      await updateUserProfile(user.uid, { benchmarksPublic: visible });
+      addToast(visible ? "Tous tes benchmarks sont maintenant publics." : "Tous tes benchmarks sont maintenant privés.");
+    } catch {
+      addToast("Erreur lors de la mise à jour.", "error");
+      setBenchmarksPublic(!visible);
+    } finally {
+      setUpdatingBenchmarksVisibility(false);
+    }
+  }
+
+  async function handleSkillsVisibilityChange(visible: boolean) {
+    if (!user?.uid) return;
+    setSkillsPublic(visible);
+    setUpdatingSkillsVisibility(true);
+    try {
+      await setAllSkillCategoryVisibility(user.uid, visible);
+      await updateUserProfile(user.uid, { skillsPublic: visible });
+      addToast(visible ? "Toutes tes compétences sont maintenant visibles." : "Toutes tes compétences sont maintenant privées.");
+    } catch {
+      addToast("Erreur lors de la mise à jour.", "error");
+      setSkillsPublic(!visible);
+    } finally {
+      setUpdatingSkillsVisibility(false);
+    }
+  }
+
   async function handlePublishAllBenchmarks() {
     if (!user?.uid) return;
     setPublishingAllBenchmarks(true);
     try {
-      const all = await listAllBenchmarkResultsForUser(user.uid);
-      const toPublish = all.filter((r) => r.isPublic !== true);
-      for (const r of toPublish) {
-        await updateBenchmarkVisibility(user.uid, r.id, true);
-      }
-      if (toPublish.length > 0) {
-        addToast(
-          toPublish.length === 1
-            ? "1 benchmark rendu public."
-            : `${toPublish.length} benchmarks rendus publics.`
-        );
-      } else {
-        addToast("Tous tes benchmarks sont déjà publics.");
-      }
+      await updateAllBenchmarkVisibility(user.uid, true);
+      setBenchmarksPublic(true);
+      await updateUserProfile(user.uid, { benchmarksPublic: true });
+      addToast("Tous tes benchmarks sont maintenant publics.");
     } catch {
       addToast("Erreur lors de la mise à jour.", "error");
     } finally {
@@ -351,26 +376,39 @@ function ProfileContent() {
                   <input
                     type="checkbox"
                     checked={benchmarksPublic}
-                    onChange={(e) => setBenchmarksPublic(e.target.checked)}
+                    onChange={(e) => handleBenchmarksVisibilityChange(e.target.checked)}
+                    disabled={updatingBenchmarksVisibility}
                     className="rounded border-[var(--card-border)] bg-[var(--background)] text-[var(--accent)] focus:ring-[var(--accent)]"
-                    aria-label="Rendre mes benchmarks visibles"
+                    aria-label="Rendre mes benchmarks visibles ou privés"
                   />
                   <span className="text-sm font-medium text-[var(--foreground)]">
                     Benchmarks visibles par les autres
                   </span>
+                  {updatingBenchmarksVisibility && (
+                    <span className="text-xs text-[var(--muted)]">Mise à jour…</span>
+                  )}
                 </label>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={skillsPublic}
-                    onChange={(e) => setSkillsPublic(e.target.checked)}
+                    onChange={(e) => handleSkillsVisibilityChange(e.target.checked)}
+                    disabled={updatingSkillsVisibility}
                     className="rounded border-[var(--card-border)] bg-[var(--background)] text-[var(--accent)] focus:ring-[var(--accent)]"
-                    aria-label="Rendre mes compétences visibles"
+                    aria-label="Rendre mes compétences visibles ou privées"
                   />
                   <span className="text-sm font-medium text-[var(--foreground)]">
                     Compétences visibles par les autres
                   </span>
+                  {updatingSkillsVisibility && (
+                    <span className="text-xs text-[var(--muted)]">Mise à jour…</span>
+                  )}
                 </label>
+                <p className="text-xs text-[var(--muted)] -mt-1">
+                  <Link href="/dashboard/skills" className="text-[var(--accent)] hover:underline">
+                    Gérer ma checklist compétences →
+                  </Link>
+                </p>
                 <div className="pt-2">
                   <Button
                     type="button"
