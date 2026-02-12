@@ -14,6 +14,7 @@ import {
   where,
   limit,
   serverTimestamp,
+  onSnapshot,
   type Timestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -53,6 +54,46 @@ export async function getUsersByGym(gymId: string): Promise<UserProfile[]> {
       } as UserProfile;
     })
     .filter(Boolean);
+}
+
+/** Subscribe to gym members in real-time. Returns unsubscribe function. */
+export function subscribeGymMembers(
+  gymId: string,
+  callback: (members: UserProfile[]) => void
+): () => void {
+  if (!gymId?.trim()) {
+    callback([]);
+    return () => {};
+  }
+  const ref = collection(db, COLLECTION);
+  const q = query(ref, where("gymId", "==", gymId));
+  
+  const unsubscribe = onSnapshot(q, (snap) => {
+    const members = snap.docs
+      .map((d) => {
+        const data = d.data();
+        const uid = d.id;
+        const affiliatedGymId = (data.gymId as string | undefined) ?? (data.affiliatedGymId as string | undefined);
+        return {
+          uid,
+          displayName: (data.displayName as string) ?? "",
+          email: (data.email as string) ?? "",
+          roles: (data.roles as UserProfile["roles"]) ?? { athlete: false, organizer: false },
+          firstName: data.firstName as string | undefined,
+          lastName: data.lastName as string | undefined,
+          dateOfBirth: data.dateOfBirth as string | undefined,
+          affiliatedGymId: affiliatedGymId ?? undefined,
+          preferredDivision: data.preferredDivision as UserProfile["preferredDivision"],
+          photoURL: data.photoURL as string | undefined,
+          createdAt: (data.createdAt as Timestamp)?.toDate?.() ?? new Date(),
+          updatedAt: (data.updatedAt as Timestamp)?.toDate?.() ?? new Date(),
+        } as UserProfile;
+      })
+      .filter(Boolean);
+    callback(members);
+  });
+  
+  return unsubscribe;
 }
 
 const IN_QUERY_LIMIT = 30;

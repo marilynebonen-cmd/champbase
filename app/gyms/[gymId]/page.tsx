@@ -11,6 +11,7 @@ import {
   getGymFromServer,
   getPublishedWodsByGym,
   getUsersByGym,
+  subscribeGymMembers,
   subscribeGymFeed,
   getGymFeedPage,
   getScoresByAthlete,
@@ -105,12 +106,10 @@ export default function GymProfilePage() {
     Promise.all([
       getGym(gymId),
       getPublishedWodsByGym(gymId).catch(() => [] as WodWithId[]),
-      getUsersByGym(gymId).catch(() => [] as UserProfile[]),
     ])
-      .then(([g, w, m]) => {
+      .then(([g, w]) => {
         setGym(g ?? null);
         setWods(w);
-        setMembers(m);
         if (g) {
           setInfoForm({
             description: g.description ?? "",
@@ -129,6 +128,15 @@ export default function GymProfilePage() {
         setGym(null);
       })
       .finally(() => setLoading(false));
+  }, [gymId]);
+
+  // Subscribe to gym members in real-time
+  useEffect(() => {
+    if (!gymId) return;
+    const unsubscribe = subscribeGymMembers(gymId, (members) => {
+      setMembers(members);
+    });
+    return () => unsubscribe();
   }, [gymId]);
 
   if (loading) {
