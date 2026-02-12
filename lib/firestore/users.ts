@@ -185,8 +185,10 @@ export async function updateUserProfile(
   if (data.firstName !== undefined) payload.firstName = data.firstName;
   if (data.lastName !== undefined) payload.lastName = data.lastName;
   if (data.dateOfBirth !== undefined) payload.dateOfBirth = data.dateOfBirth;
-  // Production: store as gymId in Firestore.
-  if (data.affiliatedGymId !== undefined) payload.gymId = data.affiliatedGymId;
+  // Production: store as gymId in Firestore. Allow null to remove affiliation.
+  if ("affiliatedGymId" in data) {
+    payload.gymId = data.affiliatedGymId || null;
+  }
   if (data.preferredDivision !== undefined)
     payload.preferredDivision = data.preferredDivision;
   if (data.photoURL !== undefined) payload.photoURL = data.photoURL;

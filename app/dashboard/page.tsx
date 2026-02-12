@@ -61,12 +61,13 @@ function DashboardContent() {
       const first = editFirstName.trim();
       const last = editLastName.trim();
       const displayName = [first, last].filter(Boolean).join(" ") || undefined;
+      const gymId = editAffiliatedGymId.trim();
       await updateUserProfile(user.uid, {
         firstName: first || undefined,
         lastName: last || undefined,
         displayName,
         dateOfBirth: editDateOfBirth.trim() || undefined,
-        affiliatedGymId: editAffiliatedGymId.trim() || undefined,
+        affiliatedGymId: gymId || undefined, // Empty string becomes undefined, then converted to null in updateUserProfile
         preferredDivision: editPreferredDivision || undefined,
       });
       const updated = await getUser(user.uid);
