@@ -294,11 +294,11 @@ function WodDetailContent() {
 
   return (
     <Layout>
-      <Link href="/athlete/wods" className="text-[var(--accent)] mb-4 inline-block hover:underline">
+      <Link href="/athlete/wods" className="text-[var(--accent)] mb-4 inline-block hover:underline text-sm sm:text-base">
         ← WODs
       </Link>
-      <h1 className="text-3xl font-bold mb-2">{wod.title}</h1>
-      <p className="text-[var(--muted)] text-sm mb-2">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-2">{wod.title}</h1>
+      <p className="text-[var(--muted)] text-xs sm:text-sm mb-3">
         Créé le {wod.createdAt instanceof Date
           ? wod.createdAt.toLocaleString("fr-CA", { dateStyle: "medium" })
           : "seconds" in (wod.createdAt as object)
@@ -311,7 +311,7 @@ function WodDetailContent() {
             <button
               type="button"
               onClick={() => setDescriptionTrack("rx")}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors ${
                 descriptionTrack === "rx"
                   ? "bg-[var(--accent)] text-black"
                   : "bg-[var(--card)] border border-[var(--card-border)] text-[var(--muted)] hover:text-[var(--foreground)]"
@@ -322,7 +322,7 @@ function WodDetailContent() {
             <button
               type="button"
               onClick={() => setDescriptionTrack("scaled")}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors ${
                 descriptionTrack === "scaled"
                   ? "bg-[var(--accent)] text-black"
                   : "bg-[var(--card)] border border-[var(--card-border)] text-[var(--muted)] hover:text-[var(--foreground)]"
@@ -331,24 +331,24 @@ function WodDetailContent() {
               Scaled
             </button>
           </div>
-          <p className="text-[var(--muted)] whitespace-pre-wrap">{getWodDisplayDescription(wod, descriptionTrack)}</p>
+          <p className="text-[var(--muted)] text-sm whitespace-pre-wrap">{getWodDisplayDescription(wod, descriptionTrack)}</p>
         </div>
       )}
-      <span className="inline-block rounded px-2 py-0.5 bg-[var(--card)] text-sm text-[var(--muted)] mb-6">
+      <span className="inline-block rounded px-2 py-0.5 bg-[var(--card)] text-xs sm:text-sm text-[var(--muted)] mb-6">
         {SCORING_TYPE_LABELS[wod.scoreType]}
       </span>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="rounded-xl">
-          <h2 className="text-xl font-bold mb-1">Soumettre / modifier mon score</h2>
-          <p className="text-[var(--muted)] text-sm mb-5">Un seul score par WOD (mise à jour possible).</p>
-          <form onSubmit={handleSubmitScore} className="space-y-4">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+        <Card className="rounded-xl p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold mb-1">Soumettre / modifier mon score</h2>
+          <p className="text-[var(--muted)] text-xs sm:text-sm mb-4 sm:mb-5">Un seul score par WOD (mise à jour possible).</p>
+          <form onSubmit={handleSubmitScore} className="space-y-3 sm:space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">Division</label>
+              <label className="block text-xs sm:text-sm font-medium text-[var(--foreground)] mb-1.5">Division</label>
               <select
                 value={formDivision}
                 onChange={(e) => setFormDivision(e.target.value as WodDivision)}
-                className="w-full rounded-xl border border-[var(--card-border)] bg-[var(--background)] px-4 py-2.5 text-[var(--foreground)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 focus:ring-offset-[var(--card)] transition-shadow"
+                className="w-full rounded-xl border border-[var(--card-border)] bg-[var(--background)] px-3 sm:px-4 py-2 sm:py-2.5 text-[var(--foreground)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 focus:ring-offset-[var(--card)] transition-shadow"
               >
                 {DIVISIONS.map((d) => (
                   <option key={d.value} value={d.value}>
@@ -358,7 +358,7 @@ function WodDetailContent() {
               </select>
             </div>
             {hasTimeCapOption && (
-              <div className="flex items-center gap-2 rounded-xl border border-[var(--card-border)] bg-[var(--background)] px-4 py-3">
+              <div className="flex items-center gap-2 rounded-xl border border-[var(--card-border)] bg-[var(--background)] px-3 sm:px-4 py-2.5 sm:py-3">
                 <input
                   type="checkbox"
                   id="completedWithinTimeCap"
@@ -367,88 +367,88 @@ function WodDetailContent() {
                     setCompletedWithinTimeCap(e.target.checked);
                     setScoreInput("");
                   }}
-                  className="rounded border-[var(--card-border)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                  className="rounded border-[var(--card-border)] text-[var(--accent)] focus:ring-[var(--accent)] w-4 h-4 sm:w-5 sm:h-5"
                 />
-                <label htmlFor="completedWithinTimeCap" className="text-sm font-medium text-[var(--foreground)] cursor-pointer">
+                <label htmlFor="completedWithinTimeCap" className="text-xs sm:text-sm font-medium text-[var(--foreground)] cursor-pointer">
                   WOD complété avant TC
                 </label>
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">Score ({unitLabel}) *</label>
+              <label className="block text-xs sm:text-sm font-medium text-[var(--foreground)] mb-1.5">Score ({unitLabel}) *</label>
               <input
                 type="text"
                 value={scoreInput}
                 onChange={(e) => setScoreInput(e.target.value)}
                 placeholder={scoreAsTime ? "5:30" : wod.scoreType === "weight" ? "225" : "120"}
                 required
-                className="w-full rounded-xl border border-[var(--card-border)] bg-[var(--background)] px-4 py-2.5 text-[var(--foreground)] text-sm placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 focus:ring-offset-[var(--card)] transition-shadow"
+                className="w-full rounded-xl border border-[var(--card-border)] bg-[var(--background)] px-3 sm:px-4 py-2 sm:py-2.5 text-[var(--foreground)] text-sm placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 focus:ring-offset-[var(--card)] transition-shadow"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">Commentaire / post (optionnel)</label>
+              <label className="block text-xs sm:text-sm font-medium text-[var(--foreground)] mb-1.5">Commentaire / post (optionnel)</label>
               <textarea
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
                 placeholder="Commentaire ou post pour le fil d'activité…"
                 rows={2}
-                className="w-full rounded-xl border border-[var(--card-border)] bg-[var(--background)] px-4 py-2.5 text-[var(--foreground)] text-sm resize-y placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 focus:ring-offset-[var(--card)] transition-shadow"
+                className="w-full rounded-xl border border-[var(--card-border)] bg-[var(--background)] px-3 sm:px-4 py-2 sm:py-2.5 text-[var(--foreground)] text-sm resize-y placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 focus:ring-offset-[var(--card)] transition-shadow"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">Photo (optionnel)</label>
+              <label className="block text-xs sm:text-sm font-medium text-[var(--foreground)] mb-1.5">Photo (optionnel)</label>
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handlePhotoChange}
-                className="block w-full text-sm text-[var(--muted)] file:mr-3 file:rounded-xl file:border-0 file:bg-[var(--accent)] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-black file:cursor-pointer hover:file:opacity-90 transition-opacity"
+                className="block w-full text-xs sm:text-sm text-[var(--muted)] file:mr-2 sm:file:mr-3 file:rounded-xl file:border-0 file:bg-[var(--accent)] file:px-3 sm:file:px-4 file:py-1.5 sm:file:py-2 file:text-xs sm:file:text-sm file:font-semibold file:text-black file:cursor-pointer hover:file:opacity-90 transition-opacity"
               />
               {(photoPreviewUrl || photoFile) && (
-                <div className="mt-2 flex items-center gap-3">
+                <div className="mt-2 flex items-start gap-3">
                   {photoPreviewUrl && (
                     <img
                       src={photoPreviewUrl}
                       alt="Aperçu"
-                      className="w-20 h-20 object-cover rounded-lg border border-[var(--card-border)]"
+                      className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border border-[var(--card-border)] flex-shrink-0"
                     />
                   )}
                   <button
                     type="button"
                     onClick={clearPhoto}
-                    className="text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                    className="text-xs sm:text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors underline mt-1"
                   >
                     Retirer la photo
                   </button>
                 </div>
               )}
             </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {error && <p className="text-red-400 text-xs sm:text-sm">{error}</p>}
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-xl bg-[var(--accent)] text-black px-4 py-3 text-sm font-semibold shadow-sm hover:opacity-95 active:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+              className="w-full rounded-xl bg-[var(--accent)] text-black px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold shadow-sm hover:opacity-95 active:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             >
               {submitting ? "Envoi…" : "Soumettre"}
             </button>
           </form>
           {myScore && (
-            <p className="text-[var(--muted)] text-sm mt-4 pt-3 border-t border-[var(--card-border)]">
+            <p className="text-[var(--muted)] text-xs sm:text-sm mt-3 sm:mt-4 pt-3 border-t border-[var(--card-border)]">
               Mon score : <span className="font-medium text-[var(--foreground)]">
                 {formatWodValue(
                   (wod.scoreType === "reps" || wod.scoreType === "time") && myScore.completedWithinTimeCap === true ? "time" : wod.scoreType,
                   myScore.value,
                   myScore.valueRaw
                 )}
-                {wod.scoreType === "weight" && <span className="text-sm text-[var(--muted)]"> lbs</span>}
+                {wod.scoreType === "weight" && <span className="text-xs sm:text-sm text-[var(--muted)]"> lbs</span>}
               </span>
               {myRank != null && <span className="ml-1">— Rang : <span className="font-semibold text-[var(--accent)]">#{myRank}</span></span>}
             </p>
           )}
           {gymId && (
-            <div className="mt-4 pt-4 border-t border-[var(--card-border)]">
+            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-[var(--card-border)]">
               <Link
                 href={`/gyms/${gymId}?tab=feed`}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent)] px-4 py-2.5 text-sm font-medium hover:bg-[var(--accent)]/20 hover:border-[var(--accent)]/70 transition-colors"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent)] px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium hover:bg-[var(--accent)]/20 hover:border-[var(--accent)]/70 transition-colors"
               >
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -459,16 +459,16 @@ function WodDetailContent() {
           )}
         </Card>
 
-        <Card className="rounded-xl">
-          <h2 className="text-xl font-bold mb-2">Leaderboard</h2>
-          <p className="text-[var(--muted)] text-sm mb-3">Tous les scores, du meilleur au moins bon. Choisissez TOUS, RX ou SCALE.</p>
-          <div className="grid grid-cols-3 gap-2 mb-4">
+        <Card className="rounded-xl p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold mb-2">Leaderboard</h2>
+          <p className="text-[var(--muted)] text-xs sm:text-sm mb-3">Tous les scores, du meilleur au moins bon. Choisissez TOUS, RX ou SCALE.</p>
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-4">
             {LEADERBOARD_FILTERS.map((f) => (
               <button
                 key={f.value}
                 type="button"
                 onClick={() => setLeaderboardTrack(f.value)}
-                className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                className={`rounded-xl px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-colors ${
                   effectiveTrack === f.value
                     ? "bg-[var(--accent)] text-black shadow-sm"
                     : "bg-[var(--card)] border border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
