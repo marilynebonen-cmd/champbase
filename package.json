@@ -1,0 +1,34 @@
+{
+  "name": "champbase",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "firestore:indexes": "firebase deploy --only firestore:indexes",
+    "firestore": "firebase deploy --only firestore",
+    "generate:icons": "node scripts/generate-pwa-icons.js",
+    "pwa:audit": "npm run build && npm start"
+  },
+  "dependencies": {
+    "firebase": "^12.8.0",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-easy-crop": "^5.5.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "firebase-tools": "^13.0.0",
+    "next-pwa": "^5.6.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

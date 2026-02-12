@@ -1,0 +1,12 @@
+rules_version = '2';
+// ChampBase Storage – score photos under gyms (WOD scores, feed photos).
+// Deploy: firebase deploy --only storage
+service firebase.storage {
+  match /b/{bucket}/o {
+    // gyms/{gymId}/wodScores/ and gyms/{gymId}/wods/.../scores/... – authenticated users can write their own
+    match /gyms/{gymId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}

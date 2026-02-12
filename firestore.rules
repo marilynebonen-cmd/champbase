@@ -1,0 +1,170 @@
+rules_version = '2';
+// ChampBase Firestore – production rules.
+// Deploy: firebase deploy --only firestore:rules
+// Workouts/leaderboards: create only gym owner or event creator. Scores: athlete can update own score.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // users: any authenticated user can read; write only own
+    match /users/{uid} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // gyms: public read; write only if request.auth.uid == ownerUid
+    match /gyms/{gymId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+
+      // WODs subcollection: only gym owner can create/update/delete; authenticated can read published
+      match /wods/{wodId} {
+        allow read: if request.auth != null && (
+          resource.data.isPublished == true
+          || resource.data.createdByUid == request.auth.uid
+          || get(/databases/$(database)/documents/gyms/$(gymId)).data.ownerUid == request.auth.uid
+        );
+        allow create: if request.auth != null
+          && get(/databases/$(database)/documents/gyms/$(gymId)).data.ownerUid == request.auth.uid
+          && request.resource.data.createdByUid == request.auth.uid
+          && request.resource.data.keys().hasAll(['title', 'scoreType', 'createdByUid', 'isPublished'])
+          && request.resource.data.scoreType in ['time', 'reps', 'weight']
+          && request.resource.data.isPublished is bool;
+        allow update, delete: if request.auth != null
+          && get(/databases/$(database)/documents/gyms/$(gymId)).data.ownerUid == request.auth.uid;
+
+        // scores subcollection: doc id = athlete uid; athlete can create/update only their own score
+        match /scores/{uid} {
+          allow read: if request.auth != null;
+          allow create: if request.auth != null && request.auth.uid == uid;
+          allow update: if request.auth != null && request.auth.uid == uid;
+          allow delete: if request.auth != null
+            && get(/databases/$(database)/documents/gyms/$(gymId)).data.ownerUid == request.auth.uid;
+        }
+      }
+
+      // Gym activity feed: gyms/{gymId}/feed/{scoreId} – read any authenticated; create/update (athlete or trophy toggle)
+      match /feed/{scoreId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.resource.data.athleteUid == request.auth.uid;
+        // Update: post owner can update any field; any authenticated user can update only trophies (toggle reaction)
+        allow update: if request.auth != null && (
+          resource.data.athleteUid == request.auth.uid
+          || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['trophies'])
+        );
+        allow delete: if request.auth != null && resource.data.athleteUid == request.auth.uid;
+      }
+
+      // Feed posts (legacy): created/updated only by Cloud Function; read allowed
+      match /feedPosts/{postId} {
+        allow read: if true;
+        allow create, update, delete: if false;
+
+        match /replies/{replyId} {
+          allow read: if request.auth != null;
+          allow create: if request.auth != null
+            && request.resource.data.userId == request.auth.uid
+            && request.resource.data.userName is string
+            && request.resource.data.text is string;
+          allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+        }
+
+        match /stars/{userId} {
+          allow read: if request.auth != null;
+          allow create, update: if request.auth != null
+            && request.auth.uid == userId
+            && request.resource.data.rating is number
+            && request.resource.data.rating >= 1
+            && request.resource.data.rating <= 5;
+          allow delete: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+    }
+
+    // events: read if published (isPublic or status) OR user is creator; write only if request.auth.uid == createdByUid
+    match /events/{eventId} {
+      allow read: if resource.data.isPublic == true
+        || resource.data.status == 'published'
+        || (request.auth != null && resource.data.createdByUid == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.createdByUid == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.createdByUid == request.auth.uid;
+    }
+
+    // workouts: read for MVP (public); create/update/delete only gym owner or event creator
+    match /workouts/{workoutId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.gymId is string
+        && (
+          (request.resource.data.gymId != ''
+            && get(/databases/$(database)/documents/gyms/$(request.resource.data.gymId)).data.ownerUid == request.auth.uid)
+          || (request.resource.data.eventId != null
+            && request.resource.data.eventId is string
+            && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.createdByUid == request.auth.uid)
+        );
+      allow update, delete: if request.auth != null
+        && (
+          (resource.data.gymId != '' && get(/databases/$(database)/documents/gyms/$(resource.data.gymId)).data.ownerUid == request.auth.uid)
+          || (resource.data.eventId != null && get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.createdByUid == request.auth.uid)
+        );
+    }
+
+    // leaderboards: read if isPublic OR event creator (so organizer can read draft event leaderboard)
+    match /leaderboards/{leaderboardId} {
+      allow read: if resource.data.isPublic == true
+        || (request.auth != null && resource.data.eventId != null && get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.createdByUid == request.auth.uid);
+      allow create: if request.auth != null
+        && (
+          (request.resource.data.workoutId != null && request.resource.data.workoutId is string
+            && (
+              (get(/databases/$(database)/documents/workouts/$(request.resource.data.workoutId)).data.gymId != ''
+                && get(/databases/$(database)/documents/gyms/$(get(/databases/$(database)/documents/workouts/$(request.resource.data.workoutId)).data.gymId)).data.ownerUid == request.auth.uid)
+              || (get(/databases/$(database)/documents/workouts/$(request.resource.data.workoutId)).data.eventId != null
+                && get(/databases/$(database)/documents/events/$(get(/databases/$(database)/documents/workouts/$(request.resource.data.workoutId)).data.eventId)).data.createdByUid == request.auth.uid)
+            ))
+          || (request.resource.data.workoutId == null
+            && request.resource.data.eventId != null
+            && request.resource.data.eventId is string
+            && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.createdByUid == request.auth.uid)
+        );
+      allow update, delete: if request.auth != null
+        && (
+          (resource.data.gymId != '' && get(/databases/$(database)/documents/gyms/$(resource.data.gymId)).data.ownerUid == request.auth.uid)
+          || (resource.data.eventId != null && get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.createdByUid == request.auth.uid)
+        );
+    }
+
+    // scores (top-level): TEMP DEBUG – allow read/write when authenticated (revert for production)
+    match /scores/{scoreId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // registrations: user can read own; event creator can read all for their event; user can read pending (userId=='') where email matches (to claim).
+    match /registrations/{regId} {
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid
+        || (resource.data.eventId != null && get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.createdByUid == request.auth.uid)
+        || (resource.data.userId == '' && resource.data.email != null && resource.data.email == request.auth.token.email)
+      );
+      allow create: if request.auth != null && (
+        request.resource.data.userId == request.auth.uid
+        || (request.resource.data.eventId != null && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.createdByUid == request.auth.uid)
+      );
+      allow update: if request.auth != null && (
+        resource.data.userId == request.auth.uid
+        || (resource.data.eventId != null && get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.createdByUid == request.auth.uid)
+        || (resource.data.userId == '' && resource.data.email != null && resource.data.email == request.auth.token.email && request.resource.data.userId == request.auth.uid)
+      );
+      allow delete: if request.auth != null && (
+        resource.data.userId == request.auth.uid
+        || (resource.data.eventId != null && get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.createdByUid == request.auth.uid)
+      );
+    }
+  }
+}

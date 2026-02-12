@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "prod": "champbase-prod"
+  },
+  "targets": {},
+  "etags": {}
+}

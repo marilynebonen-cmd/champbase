@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Generate Champ PWA Icons</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #fafafa;
+    }
+    h1 { color: #facc15; }
+    canvas { display: none; }
+    button {
+      background: #facc15;
+      color: #0a0a0a;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 10px 0;
+    }
+    button:hover { opacity: 0.9; }
+    .preview {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .preview img {
+      width: 100%;
+      border: 1px solid #333;
+      border-radius: 8px;
+    }
+    .status {
+      margin: 20px 0;
+      padding: 10px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      border-left: 4px solid #facc15;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎨 Generate Champ PWA Icons</h1>
+  <p>This tool creates simple PWA icons for your app. Click the button below to generate and download all required icon sizes.</p>
+  
+  <button onclick="generateAllIcons()">Generate & Download All Icons</button>
+  
+  <div id="status" class="status" style="display:none;"></div>
+  <div id="preview" class="preview"></div>
+
+  <script>
+    const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+
+    function createIcon(size) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      // Dark background
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, size, size);
+
+      // Yellow 'C' letter
+      ctx.fillStyle = '#facc15';
+      ctx.font = `bold ${size * 0.65}px Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('C', size / 2, size / 2);
+
+      return canvas;
+    }
+
+    function downloadCanvas(canvas, filename) {
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    async function generateAllIcons() {
+      const statusDiv = document.getElementById('status');
+      const previewDiv = document.getElementById('preview');
+      statusDiv.style.display = 'block';
+      statusDiv.innerHTML = 'Generating icons...';
+      previewDiv.innerHTML = '';
+
+      for (const size of sizes) {
+        const canvas = createIcon(size);
+        const filename = `icon-${size}x${size}.png`;
+        
+        // Add preview
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL();
+        img.title = filename;
+        previewDiv.appendChild(img);
+
+        // Download
+        await new Promise(resolve => setTimeout(resolve, 200));
+        downloadCanvas(canvas, filename);
+      }
+
+      // Generate apple-touch-icon (180x180)
+      const appleCanvas = createIcon(180);
+      downloadCanvas(appleCanvas, 'apple-touch-icon.png');
+
+      statusDiv.innerHTML = `
+        ✅ Generated ${sizes.length + 1} icons!<br>
+        📥 Check your Downloads folder<br>
+        📁 Move all icons to the <code>public/</code> folder of your project<br>
+        🔄 Rebuild your app: <code>npm run build</code>
+      `;
+    }
+  </script>
+
+  <hr style="margin: 40px 0; border-color: #333;">
+  
+  <h2>Manual Instructions</h2>
+  <ol style="line-height: 1.8;">
+    <li>Open this HTML file in a browser</li>
+    <li>Click "Generate & Download All Icons"</li>
+    <li>Move all downloaded PNG files to <code>champbase/public/</code></li>
+    <li>Rebuild your app: <code>npm run build</code></li>
+    <li>Test installation on mobile device</li>
+  </ol>
+
+  <h3 style="color: #facc15; margin-top: 30px;">Alternative: Use Your Own Logo</h3>
+  <p>For a professional look, use the <code>scripts/generate-pwa-icons.js</code> script with your custom logo:</p>
+  <ol style="line-height: 1.8;">
+    <li>Install sharp: <code>npm install --save-dev sharp</code></li>
+    <li>Add your 1024x1024 logo as <code>public/icon-source.png</code></li>
+    <li>Run: <code>node scripts/generate-pwa-icons.js</code></li>
+  </ol>
+</body>
+</html>
