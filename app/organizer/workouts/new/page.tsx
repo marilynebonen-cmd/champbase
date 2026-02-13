@@ -8,7 +8,7 @@ import { Layout } from "@/components/ui/Layout";
 import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  getGymsByOwner,
+  getGymsWhereUserCanCreateWod,
   getEventsByCreator,
   getEvent,
   createWorkout,
@@ -35,7 +35,7 @@ function NewWorkoutContent() {
   const eventIdFromUrl = searchParams.get("eventId") ?? "";
   const gymIdFromUrl = searchParams.get("gymId") ?? "";
 
-  const [gyms, setGyms] = useState<Awaited<ReturnType<typeof getGymsByOwner>>>([]);
+  const [gyms, setGyms] = useState<Awaited<ReturnType<typeof getGymsWhereUserCanCreateWod>>>([]);
   const [events, setEvents] = useState<Awaited<ReturnType<typeof getEventsByCreator>>>([]);
   const [event, setEvent] = useState<Awaited<ReturnType<typeof getEvent>>>(null);
   const [gymId, setGymId] = useState("");
@@ -52,7 +52,7 @@ function NewWorkoutContent() {
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([getGymsByOwner(user.uid), getEventsByCreator(user.uid)])
+    Promise.all([getGymsWhereUserCanCreateWod(user.uid), getEventsByCreator(user.uid)])
       .then(([g, e]) => {
         setGyms(g);
         setEvents(e);

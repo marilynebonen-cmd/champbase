@@ -10,6 +10,12 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Collection group "member_roles": requise pour getGymsWhereUserCanCreateWod (coach/admin voient leurs gyms)
+    match /{path=**}/member_roles/{userId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // users: any authenticated user can read; write only own
     match /users/{uid} {
       allow read: if request.auth != null;
@@ -52,29 +58,51 @@ service cloud.firestore {
       allow create: if request.auth != null && request.resource.data.ownerUid == request.auth.uid;
       allow update, delete: if request.auth != null && resource.data.ownerUid == request.auth.uid;
 
-      // WODs subcollection: only gym owner can create/update/delete; authenticated can read published
+      // member_roles: rôles par membre (admin, coach); lecture publique pour afficher le rôle sur le profil; seul le propriétaire du gym peut écrire
+      match /member_roles/{userId} {
+        allow read: if true;
+        allow create, update, delete: if request.auth != null
+          && get(/databases/$(database)/documents/gyms/$(gymId)).data.ownerUid == request.auth.uid;
+      }
+
+      // WODs subcollection: gym owner, admin ou coach du gym peuvent créer/éditer/supprimer
+      // exists() évite l'erreur quand le doc member_roles n'existe pas pour l'utilisateur
       match /wods/{wodId} {
         allow read: if request.auth != null && (
           resource.data.isPublished == true
           || resource.data.createdByUid == request.auth.uid
           || get(/databases/$(database)/documents/gyms/$(gymId)).data.ownerUid == request.auth.uid
+          || (exists(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)).data.get('admin', false) == true)
+          || (exists(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)).data.get('coach', false) == true)
         );
         allow create: if request.auth != null
-          && get(/databases/$(database)/documents/gyms/$(gymId)).data.ownerUid == request.auth.uid
+          && (
+            get(/databases/$(database)/documents/gyms/$(gymId)).data.ownerUid == request.auth.uid
+            || (exists(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)).data.get('admin', false) == true)
+            || (exists(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)).data.get('coach', false) == true)
+          )
           && request.resource.data.createdByUid == request.auth.uid
           && request.resource.data.keys().hasAll(['title', 'scoreType', 'createdByUid', 'isPublished'])
           && request.resource.data.scoreType in ['time', 'reps', 'weight']
           && request.resource.data.isPublished is bool;
         allow update, delete: if request.auth != null
-          && get(/databases/$(database)/documents/gyms/$(gymId)).data.ownerUid == request.auth.uid;
+          && (
+            get(/databases/$(database)/documents/gyms/$(gymId)).data.ownerUid == request.auth.uid
+            || (exists(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)).data.get('admin', false) == true)
+            || (exists(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)).data.get('coach', false) == true)
+          );
 
-        // scores subcollection: doc id = athlete uid; athlete can create/update only their own score
+        // scores subcollection: doc id = athlete uid; athlete create/update own; owner/admin/coach can delete
         match /scores/{uid} {
           allow read: if request.auth != null;
           allow create: if request.auth != null && request.auth.uid == uid;
           allow update: if request.auth != null && request.auth.uid == uid;
           allow delete: if request.auth != null
-            && get(/databases/$(database)/documents/gyms/$(gymId)).data.ownerUid == request.auth.uid;
+            && (
+              get(/databases/$(database)/documents/gyms/$(gymId)).data.ownerUid == request.auth.uid
+              || (exists(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)).data.get('admin', false) == true)
+              || (exists(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(gymId)/member_roles/$(request.auth.uid)).data.get('coach', false) == true)
+            );
         }
       }
 
@@ -125,26 +153,35 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && resource.data.createdByUid == request.auth.uid;
     }
 
-    // workouts: read for MVP (public); create/update/delete only gym owner or event creator
+    // workouts: read for MVP (public); create/update/delete: gym owner/admin/coach or event creator
     match /workouts/{workoutId} {
       allow read: if true;
       allow create: if request.auth != null
         && request.resource.data.gymId is string
         && (
           (request.resource.data.gymId != ''
-            && get(/databases/$(database)/documents/gyms/$(request.resource.data.gymId)).data.ownerUid == request.auth.uid)
+            && (
+              get(/databases/$(database)/documents/gyms/$(request.resource.data.gymId)).data.ownerUid == request.auth.uid
+              || (exists(/databases/$(database)/documents/gyms/$(request.resource.data.gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(request.resource.data.gymId)/member_roles/$(request.auth.uid)).data.get('admin', false) == true)
+              || (exists(/databases/$(database)/documents/gyms/$(request.resource.data.gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(request.resource.data.gymId)/member_roles/$(request.auth.uid)).data.get('coach', false) == true)
+            ))
           || (request.resource.data.eventId != null
             && request.resource.data.eventId is string
             && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.createdByUid == request.auth.uid)
         );
       allow update, delete: if request.auth != null
         && (
-          (resource.data.gymId != '' && get(/databases/$(database)/documents/gyms/$(resource.data.gymId)).data.ownerUid == request.auth.uid)
+          (resource.data.gymId != ''
+            && (
+              get(/databases/$(database)/documents/gyms/$(resource.data.gymId)).data.ownerUid == request.auth.uid
+              || (exists(/databases/$(database)/documents/gyms/$(resource.data.gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(resource.data.gymId)/member_roles/$(request.auth.uid)).data.get('admin', false) == true)
+              || (exists(/databases/$(database)/documents/gyms/$(resource.data.gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(resource.data.gymId)/member_roles/$(request.auth.uid)).data.get('coach', false) == true)
+            ))
           || (resource.data.eventId != null && get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.createdByUid == request.auth.uid)
         );
     }
 
-    // leaderboards: read if isPublic OR event creator (so organizer can read draft event leaderboard)
+    // leaderboards: read if isPublic OR event creator; create/update/delete: gym owner/admin/coach or event creator
     match /leaderboards/{leaderboardId} {
       allow read: if resource.data.isPublic == true
         || (request.auth != null && resource.data.eventId != null && get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.createdByUid == request.auth.uid);
@@ -153,7 +190,11 @@ service cloud.firestore {
           (request.resource.data.workoutId != null && request.resource.data.workoutId is string
             && (
               (get(/databases/$(database)/documents/workouts/$(request.resource.data.workoutId)).data.gymId != ''
-                && get(/databases/$(database)/documents/gyms/$(get(/databases/$(database)/documents/workouts/$(request.resource.data.workoutId)).data.gymId)).data.ownerUid == request.auth.uid)
+                && (
+                  get(/databases/$(database)/documents/gyms/$(get(/databases/$(database)/documents/workouts/$(request.resource.data.workoutId)).data.gymId)).data.ownerUid == request.auth.uid
+                  || (exists(/databases/$(database)/documents/gyms/$(get(/databases/$(database)/documents/workouts/$(request.resource.data.workoutId)).data.gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(get(/databases/$(database)/documents/workouts/$(request.resource.data.workoutId)).data.gymId)/member_roles/$(request.auth.uid)).data.get('admin', false) == true)
+                  || (exists(/databases/$(database)/documents/gyms/$(get(/databases/$(database)/documents/workouts/$(request.resource.data.workoutId)).data.gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(get(/databases/$(database)/documents/workouts/$(request.resource.data.workoutId)).data.gymId)/member_roles/$(request.auth.uid)).data.get('coach', false) == true)
+                ))
               || (get(/databases/$(database)/documents/workouts/$(request.resource.data.workoutId)).data.eventId != null
                 && get(/databases/$(database)/documents/events/$(get(/databases/$(database)/documents/workouts/$(request.resource.data.workoutId)).data.eventId)).data.createdByUid == request.auth.uid)
             ))
@@ -164,7 +205,12 @@ service cloud.firestore {
         );
       allow update, delete: if request.auth != null
         && (
-          (resource.data.gymId != '' && get(/databases/$(database)/documents/gyms/$(resource.data.gymId)).data.ownerUid == request.auth.uid)
+          (resource.data.gymId != ''
+            && (
+              get(/databases/$(database)/documents/gyms/$(resource.data.gymId)).data.ownerUid == request.auth.uid
+              || (exists(/databases/$(database)/documents/gyms/$(resource.data.gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(resource.data.gymId)/member_roles/$(request.auth.uid)).data.get('admin', false) == true)
+              || (exists(/databases/$(database)/documents/gyms/$(resource.data.gymId)/member_roles/$(request.auth.uid)) && get(/databases/$(database)/documents/gyms/$(resource.data.gymId)/member_roles/$(request.auth.uid)).data.get('coach', false) == true)
+            ))
           || (resource.data.eventId != null && get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.createdByUid == request.auth.uid)
         );
     }

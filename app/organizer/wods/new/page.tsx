@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
-import { getGymsByOwner, createWod } from "@/lib/db";
+import { getGymsWhereUserCanCreateWod, createWod } from "@/lib/db";
 import type { WodScoreType, WodDefaultTrack } from "@/types";
 
 function NewWodContent() {
@@ -33,8 +33,8 @@ function NewWodContent() {
 
   useEffect(() => {
     if (!user) return;
-    getGymsByOwner(user.uid)
-      .then((list) => setGyms(list))
+    getGymsWhereUserCanCreateWod(user.uid)
+      .then((list) => setGyms(list.map((g) => ({ id: g.id, name: g.name }))))
       .catch(() => setGyms([]))
       .finally(() => setLoading(false));
   }, [user]);

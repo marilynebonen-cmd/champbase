@@ -15,6 +15,7 @@ import {
   listBenchmarkResultsForUser,
   getUserWeightBenchmarks,
   updateBenchmarkVisibility,
+  getGymRolesForUser,
 } from "@/lib/db";
 import { getBestResult, formatResultValue } from "@/lib/benchmarkResultUtils";
 import type { UserProfile } from "@/types";
@@ -74,12 +75,18 @@ export function AthleteDashboardView() {
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [weightBenchmarksForCalc, setWeightBenchmarksForCalc] = useState<Awaited<ReturnType<typeof getUserWeightBenchmarks>>>([]);
   const [weightBenchmarksLoading, setWeightBenchmarksLoading] = useState(false);
+  const [gymRoles, setGymRoles] = useState<Awaited<ReturnType<typeof getGymRolesForUser>>>([]);
   const { addToast } = useToast();
 
   useEffect(() => {
     if (!user) return;
     getUser(user.uid).then(setProfile);
   }, [user]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    getGymRolesForUser(user.uid).then(setGymRoles).catch(() => setGymRoles([]));
+  }, [user?.uid]);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -221,6 +228,24 @@ export function AthleteDashboardView() {
                 <dt className="text-sm text-[var(--muted)]">Région</dt>
                 <dd className="text-sm font-medium">—</dd>
               </div>
+              {gymRoles.length > 0 && (
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-[var(--card-border)]">
+                  <dt className="text-sm text-[var(--muted)]">Rôles au gym</dt>
+                  {gymRoles.map((r) => {
+                    const labels = [];
+                    if (r.admin) labels.push("Admin du gym");
+                    if (r.coach) labels.push("Coach");
+                    const label = labels.join(" & ");
+                    return (
+                      <dd key={r.gymId} className="text-sm font-medium">
+                        <Link href={`/gyms/${r.gymId}`} className="text-[var(--accent)] hover:underline">
+                          {label} · {r.gymName}
+                        </Link>
+                      </dd>
+                    );
+                  })}
+                </div>
+              )}
             </dl>
             <div className="mt-6 pt-4 border-t border-[var(--card-border)] w-full">
               <Link

@@ -18,6 +18,7 @@ import {
   listAllBenchmarkResultsForUser,
   updateAllBenchmarkVisibility,
   setAllSkillCategoryVisibility,
+  getGymRolesForUser,
 } from "@/lib/db";
 import { uploadImageAndGetURL } from "@/lib/storage";
 import { resizeImageToProfileLogo } from "@/lib/bannerImage";
@@ -47,6 +48,7 @@ function ProfileContent() {
   const [updatingSkillsVisibility, setUpdatingSkillsVisibility] = useState(false);
   const [photoCropSrc, setPhotoCropSrc] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [gymRoles, setGymRoles] = useState<Awaited<ReturnType<typeof getGymRolesForUser>>>([]);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const { addToast } = useToast();
 
@@ -61,12 +63,19 @@ function ProfileContent() {
       setAffiliatedGymId(p?.affiliatedGymId ?? "");
       setPreferredDivision(p?.preferredDivision ?? "");
       setPhotoURL(p?.photoURL ?? "");
+      setBenchmarksPublic(p?.benchmarksPublic !== false);
+      setSkillsPublic(p?.skillsPublic !== false);
     });
   }, [user]);
 
   useEffect(() => {
     getGymsList().then(setGyms);
   }, []);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    getGymRolesForUser(user.uid).then(setGymRoles).catch(() => setGymRoles([]));
+  }, [user?.uid]);
 
   async function handleBenchmarksVisibilityChange(visible: boolean) {
     if (!user?.uid) return;
@@ -364,6 +373,32 @@ function ProfileContent() {
                   </select>
                 </div>
               </div>
+              {gymRoles.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-[var(--card-border)]">
+                  <h2 className="heading-3 mb-2">Rôles au gym</h2>
+                  <p className="caption mb-3">
+                    Rôles qui te sont attribués par le propriétaire du club (création de WODs, etc.).
+                  </p>
+                  <ul className="space-y-2">
+                    {gymRoles.map((r) => {
+                      const labels = [];
+                      if (r.admin) labels.push("Admin du gym");
+                      if (r.coach) labels.push("Coach");
+                      const label = labels.join(" & ");
+                      return (
+                        <li key={r.gymId} className="flex items-center gap-2">
+                          <span className="inline-flex rounded-lg bg-[var(--accent-muted)] px-3 py-1.5 text-sm font-medium text-[var(--accent)]">
+                            {label}
+                          </span>
+                          <Link href={`/gyms/${r.gymId}`} className="text-sm text-[var(--accent)] hover:underline">
+                            {r.gymName}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className="pt-6 border-t border-[var(--card-border)]">

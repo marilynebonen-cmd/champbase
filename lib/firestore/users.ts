@@ -49,11 +49,18 @@ export function subscribeGymMembers(
   const ref = collection(db, COLLECTION);
   const q = query(ref, where("gymId", "==", gymId));
   
-  const unsubscribe = onSnapshot(q, (snap) => {
-    const members = snap.docs.map((d) => docToUserProfile(d.id, d.data()));
-    callback(members);
-  });
-  
+  const unsubscribe = onSnapshot(
+    q,
+    (snap) => {
+      const members = snap.docs.map((d) => docToUserProfile(d.id, d.data()));
+      callback(members);
+    },
+    (err) => {
+      console.error("[subscribeGymMembers]", err.code, err.message);
+      callback([]);
+    }
+  );
+
   return unsubscribe;
 }
 

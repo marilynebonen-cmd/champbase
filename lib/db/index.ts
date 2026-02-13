@@ -16,6 +16,7 @@ export * from "@/lib/firestore/benchmarks";
 export * from "@/lib/firestore/benchmarkResults";
 export * from "@/lib/firestore/skills";
 export * from "@/lib/firestore/skillVisibility";
+export * from "@/lib/firestore/gymRoles";
 export {
   getUserWeightBenchmarks,
   type UserWeightBenchmark,

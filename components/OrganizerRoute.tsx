@@ -3,11 +3,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUser } from "@/lib/firestore/users";
+import { canUserAccessOrganizerArea } from "@/lib/db";
 
 /**
- * Protects organizer-only routes: requires auth + organizer role.
- * Judges are organizers for now (no separate judge role).
+ * Protects organizer routes: requires auth + (organizer role or admin/coach d'au moins un gym).
+ * Les coachs et admins de gym peuvent créer des WODs sans avoir le rôle organizer global.
  */
 export function OrganizerRoute({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
@@ -20,11 +20,10 @@ export function OrganizerRoute({ children }: { children: ReactNode }) {
       return;
     }
     let cancelled = false;
-    getUser(user.uid).then((profile) => {
+    canUserAccessOrganizerArea(user.uid).then((canAccess) => {
       if (cancelled) return;
-      const isOrganizer = profile?.roles?.organizer ?? false;
-      setAllowed(isOrganizer);
-      if (!isOrganizer) router.replace("/dashboard/athlete");
+      setAllowed(canAccess);
+      if (!canAccess) router.replace("/dashboard/athlete");
     });
     return () => {
       cancelled = true;

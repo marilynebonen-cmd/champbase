@@ -151,6 +151,22 @@
         { "fieldPath": "isPublic", "order": "ASCENDING" },
         { "fieldPath": "performedAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "member_roles",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "admin", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "member_roles",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "coach", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

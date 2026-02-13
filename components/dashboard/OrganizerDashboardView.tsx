@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import {
-  getGymsByOwner,
+  getGymsWhereUserCanCreateWod,
   getEventsByCreator,
   getAllWodsByGym,
   deleteGym,
@@ -37,7 +37,7 @@ export function OrganizerDashboardView() {
     if (!user) return;
     setFetchError(null);
     Promise.all([
-      getGymsByOwner(user.uid),
+      getGymsWhereUserCanCreateWod(user.uid),
       getEventsByCreator(user.uid),
     ])
       .then(([gymList, eventList]) => {
@@ -229,15 +229,17 @@ export function OrganizerDashboardView() {
                         >
                           Créer un WOD (gym)
                         </Link>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteGym(g)}
-                          disabled={deletingGymId === g.id}
-                          className="text-sm text-red-400 hover:text-red-300 disabled:opacity-50"
-                          title="Supprimer le gym"
-                        >
-                          {deletingGymId === g.id ? "Suppression…" : "Supprimer"}
-                        </button>
+                        {g.ownerUid === user?.uid && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteGym(g)}
+                            disabled={deletingGymId === g.id}
+                            className="text-sm text-red-400 hover:text-red-300 disabled:opacity-50"
+                            title="Supprimer le gym"
+                          >
+                            {deletingGymId === g.id ? "Suppression…" : "Supprimer"}
+                          </button>
+                        )}
                       </div>
                     </div>
                     {wods.length > 0 && (

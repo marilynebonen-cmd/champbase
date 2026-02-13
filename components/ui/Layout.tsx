@@ -51,6 +51,7 @@ export function Layout({ children }: { children: ReactNode }) {
     <>
       {navLink("/", "Home")}
       {navLink("/events", "Events")}
+      {navLink("/gyms", "Gym")}
       {navLink("/dashboard", "Dashboard")}
       {!loading && (
         <>

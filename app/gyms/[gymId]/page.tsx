@@ -19,6 +19,9 @@ import {
   deleteGymFeedDoc,
   updateGymImageUrl,
   updateGym,
+  getGymMemberRoles,
+  setGymMemberRole,
+  getMemberRoleInGym,
 } from "@/lib/db";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
@@ -80,12 +83,26 @@ export default function GymProfilePage() {
     openingDate: "",
   });
   const [savingInfo, setSavingInfo] = useState(false);
+  const [memberRoles, setMemberRoles] = useState<Record<string, { admin: boolean; coach: boolean }>>({});
+  const [updatingRoleFor, setUpdatingRoleFor] = useState<string | null>(null);
+  const [currentUserGymRole, setCurrentUserGymRole] = useState<{ admin: boolean; coach: boolean } | null>(null);
 
   useEffect(() => {
     if (tabFromUrl && ["info", "members", "leaderboard", "feed"].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
   }, [tabFromUrl]);
+
+  // Rôle du user connecté dans ce gym (pour afficher "Créer un WOD" aux coachs/admins)
+  useEffect(() => {
+    if (!gymId || !gym || !user || gym.ownerUid === user.uid) {
+      if (gym?.ownerUid === user?.uid) setCurrentUserGymRole(null);
+      return;
+    }
+    getMemberRoleInGym(gymId, user.uid)
+      .then(setCurrentUserGymRole)
+      .catch(() => setCurrentUserGymRole({ admin: false, coach: false }));
+  }, [gymId, gym, user]);
 
   // Real-time first page of feed (gyms/{gymId}/feed). Only run when auth is ready AND user is signed in (avoid permission-denied).
   useEffect(() => {
@@ -131,14 +148,20 @@ export default function GymProfilePage() {
       .finally(() => setLoading(false));
   }, [gymId]);
 
-  // Subscribe to gym members in real-time
+  // Subscribe to gym members in real-time (requires auth: Firestore users read rule)
   useEffect(() => {
-    if (!gymId) return;
+    if (!gymId || !user) return;
     const unsubscribe = subscribeGymMembers(gymId, (members) => {
       setMembers(members);
     });
     return () => unsubscribe();
-  }, [gymId]);
+  }, [gymId, user]);
+
+  // Load member roles when owner views (for members tab)
+  useEffect(() => {
+    if (!gymId || !gym || !user || gym.ownerUid !== user.uid) return;
+    getGymMemberRoles(gymId).then(setMemberRoles).catch(() => setMemberRoles({}));
+  }, [gymId, gym, user]);
 
   if (loading) {
     return (
@@ -161,6 +184,8 @@ export default function GymProfilePage() {
 
   const location = [gym.city, gym.country].filter(Boolean).join(", ") || null;
   const isOwner = Boolean(user?.uid && gym.ownerUid === user.uid);
+  const canCreateWodInGym =
+    isOwner || Boolean(currentUserGymRole && (currentUserGymRole.admin || currentUserGymRole.coach));
   const bannerImageUrl = gym.imageUrl && gym.imageUrl.trim() !== "" ? gym.imageUrl.trim() : null;
   const tabs: { id: TabId; label: string }[] = [
     { id: "feed", label: "Fil d'activité" },
@@ -244,6 +269,27 @@ export default function GymProfilePage() {
 
   function handleCancelEditInfo() {
     setEditingInfo(false);
+  }
+
+  async function handleMemberRoleChange(
+    memberUid: string,
+    role: "admin" | "coach",
+    value: boolean
+  ) {
+    if (!gymId || !user || !gym || gym.ownerUid !== user.uid) return;
+    setUpdatingRoleFor(memberUid);
+    const prev = memberRoles[memberUid] ?? { admin: false, coach: false };
+    const next = role === "admin" ? { ...prev, admin: value } : { ...prev, coach: value };
+    setMemberRoles((r) => ({ ...r, [memberUid]: next }));
+    try {
+      await setGymMemberRole(gymId, memberUid, role, value);
+      addToast(value ? `Rôle ${role === "admin" ? "Admin" : "Coach"} attribué.` : "Rôle retiré.");
+    } catch {
+      addToast("Erreur lors de la mise à jour du rôle.", "error");
+      setMemberRoles((r) => ({ ...r, [memberUid]: prev }));
+    } finally {
+      setUpdatingRoleFor(null);
+    }
   }
 
   async function handleSaveInfo() {
@@ -605,31 +651,72 @@ export default function GymProfilePage() {
             </Card>
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {members.map((member) => (
-                <li key={member.uid}>
-                  <Link href={`/gyms/${gymId}/members/${member.uid}`}>
-                    <Card className="flex items-center gap-4 p-4 hover:border-[var(--accent)]/30 transition-colors">
-                      <Avatar
-                        photoURL={member.photoURL}
-                        displayName={member.displayName}
-                        firstName={member.firstName}
-                        lastName={member.lastName}
-                        size="md"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold truncate text-[var(--foreground)]">
-                          {[member.firstName, member.lastName].filter(Boolean).join(" ") ||
-                            member.displayName ||
-                            "—"}
-                        </p>
-                        {member.preferredDivision && (
-                          <p className="text-[var(--muted)] text-sm mt-0.5">{getDivisionLabel(member.preferredDivision)}</p>
+              {members.map((member) => {
+                const roles = memberRoles[member.uid] ?? { admin: false, coach: false };
+                const isMemberOwner = gym.ownerUid === member.uid;
+                return (
+                  <li key={member.uid}>
+                    <Card className="flex flex-col gap-3 p-4">
+                      <div className="flex items-center gap-4">
+                        <Link
+                          href={`/gyms/${gymId}/members/${member.uid}`}
+                          className="flex items-center gap-4 min-w-0 flex-1 hover:opacity-90"
+                        >
+                          <Avatar
+                            photoURL={member.photoURL}
+                            displayName={member.displayName}
+                            firstName={member.firstName}
+                            lastName={member.lastName}
+                            size="md"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold truncate text-[var(--foreground)]">
+                              {[member.firstName, member.lastName].filter(Boolean).join(" ") ||
+                                member.displayName ||
+                                "—"}
+                            </p>
+                            {member.preferredDivision && (
+                              <p className="text-[var(--muted)] text-sm mt-0.5">{getDivisionLabel(member.preferredDivision)}</p>
+                            )}
+                          </div>
+                        </Link>
+                        {isMemberOwner && (
+                          <span className="shrink-0 rounded-lg bg-[var(--accent)]/20 text-[var(--accent)] px-2 py-1 text-xs font-medium">
+                            Propriétaire
+                          </span>
                         )}
                       </div>
+                      {isOwner && !isMemberOwner && (
+                        <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-[var(--card-border)]">
+                          <label className="flex items-center gap-2 text-sm text-[var(--muted)] cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={roles.admin}
+                              onChange={(e) => handleMemberRoleChange(member.uid, "admin", e.target.checked)}
+                              disabled={updatingRoleFor === member.uid}
+                              className="rounded border-[var(--card-border)] accent-[var(--accent)]"
+                            />
+                            <span>Admin du gym</span>
+                          </label>
+                          <label className="flex items-center gap-2 text-sm text-[var(--muted)] cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={roles.coach}
+                              onChange={(e) => handleMemberRoleChange(member.uid, "coach", e.target.checked)}
+                              disabled={updatingRoleFor === member.uid}
+                              className="rounded border-[var(--card-border)] accent-[var(--accent)]"
+                            />
+                            <span>Coach</span>
+                          </label>
+                          {updatingRoleFor === member.uid && (
+                            <span className="text-xs text-[var(--muted)]">Mise à jour…</span>
+                          )}
+                        </div>
+                      )}
                     </Card>
-                  </Link>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
@@ -722,7 +809,18 @@ export default function GymProfilePage() {
       {/* Tab: WODs & Classement */}
       {activeTab === "leaderboard" && (
         <section className="space-y-6">
-          <h2 className="text-xl font-bold">WODs & Classement</h2>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h2 className="text-xl font-bold">WODs & Classement</h2>
+            {canCreateWodInGym && (
+              <Link
+                href={`/organizer/wods/new?gymId=${gymId}`}
+                className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] text-black px-4 py-2 text-sm font-semibold hover:opacity-90"
+              >
+                <span aria-hidden>+</span>
+                Créer un WOD
+              </Link>
+            )}
+          </div>
           {wods.length === 0 ? (
             <Card className="text-center py-10">
               <p className="text-[var(--muted)] mb-4">Aucun WOD publié pour ce club.</p>
